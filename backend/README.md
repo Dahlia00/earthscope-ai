@@ -40,6 +40,22 @@ python -m app.services.nasa_power
 | `GET /api/health` | done |
 | `GET /api/variables` | planned |
 | `GET /api/trends` | planned |
+| `GET /api/layers` | done (registry of globe overlays) |
+| `GET /api/layers/{id}/grid` | done (serves a prebuilt grid; 503 if not built) |
+
+## Globe overlays
+
+Two layer kinds, listed by `GET /api/layers`:
+
+- `trend_grid`: numeric per-cell trend and p-value, computed offline from the POWER MERRA-2 monthly Zarr
+  (global, 0.5 x 0.625 deg, monthly from 1981). Served from `backend/data/grids/{layer_id}.json`
+  (override with `GRID_DATA_DIR`). Format: `TrendGrid` in `app/models/schemas.py`, arrays indexed `[lat][lon]`.
+  Until a grid is built the layer reports `not_built` and `/grid` returns 503. Nothing is fabricated.
+- `imagery`: rendered NASA GIBS tiles. The frontend loads `tiles.url_template` directly
+  (fill `{time}`, `{z}`, `{y}`, `{x}`). Display only; no numbers or significance.
+
+Planned (no verified NASA source yet): deforestation. The grid builder is not written yet; it will reuse the
+vectorised trend code from `trend_analysis.py` so the globe and `/api/trends` give identical results.
 
 ## NASA POWER notes
 
