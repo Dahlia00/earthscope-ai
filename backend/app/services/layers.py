@@ -18,6 +18,7 @@ _REANALYSIS_NOTE = (
     "MERRA-2 is a model-assimilated reanalysis, not direct station observations. "
     "Grid cells are ~50 km wide; a cell does not represent a country or region. "
     "Annual values are autocorrelated, so p-values may be optimistic. "
+    "With ~200,000 cells tested at 5%, about 5% would look significant by chance. "
     "A significant trend does not establish cause."
 )
 

@@ -35,13 +35,81 @@ python -m app.services.nasa_power
 
 ## Endpoints
 
-| Endpoint | Status |
+| Endpoint | Purpose |
 | --- | --- |
-| `GET /api/health` | done |
-| `GET /api/variables` | planned |
-| `GET /api/trends` | planned |
-| `GET /api/layers` | done (registry of globe overlays) |
-| `GET /api/layers/{id}/grid` | done (serves a prebuilt grid; 503 if not built) |
+| `GET /api/health` | Liveness check |
+| `GET /api/variables` | Supported variables, units, descriptions, coverage |
+| `GET /api/trends` | Point trend analysis (below) |
+| `GET /api/layers` | Registry of globe overlays |
+| `GET /api/layers/{id}/grid` | Prebuilt global trend grid (404 unknown or imagery layer, 503 not built) |
+
+### GET /api/trends
+
+```
+GET /api/trends?latitude=45.4215&longitude=-75.6972&variable=T2M&start_year=1990&end_year=2025
+```
+
+All five parameters are required. `latitude` -90..90, `longitude` -180..180, `variable` from `/api/variables`,
+`start_year` >= the variable's `coverage_start_year` (1981), `end_year` not in the future, start <= end.
+
+| Status | Meaning |
+| --- | --- |
+| 200 | Result (shape below) |
+| 422 | Invalid parameter, or fewer than 10 complete years (no trend is computed) |
+| 502 | NASA POWER unreachable and no saved snapshot for this exact request |
+
+The full real response for Ottawa is in `sample_responses/trends_ottawa_t2m_1990_2025.json`. Abridged:
+
+```json
+{
+  "location": {"requested_latitude": 45.4215, "requested_longitude": -75.6972, "cell_latitude": 45.5, "cell_longitude": -75.625, "elevation_m": 123.92},
+  "variable": {"id": "T2M", "name": "Air temperature at 2 m", "unit": "C"},
+  "source": "NASA POWER (MERRA2)",
+  "data_origin": "live",
+  "retrieved_at": "2026-11-14T17:20:22+00:00",
+  "period": {"requested_start_year": 1990, "requested_end_year": 2025, "analyzed_start_year": 1990, "analyzed_end_year": 2025},
+  "counts": {"monthly_valid": 432, "monthly_missing": 0, "annual_complete": 36, "incomplete_years_excluded": []},
+  "monthly_observations": [{"year": 1990, "month": 1, "value": -7.29}, "..."],
+  "annual_values": [{"year": 1990, "mean": 5.6536, "months_used": 12}, "..."],
+  "trend": {
+    "slope_per_decade": 0.501, "ci_lower_per_decade": 0.209, "ci_upper_per_decade": 0.752,
+    "confidence_level": 0.95, "p_value": 0.0029, "significance_level": 0.05, "significant": true,
+    "lag1_autocorrelation": 0.134, "autocorrelation_flag": false,
+    "trend_line": [{"year": 1990, "value": 4.5736}, "..."]
+  },
+  "interpretation": "From 1990 to 2025 (36 complete years), annual mean air temperature ...",
+  "limitations": ["Statistical significance does not prove causation.", "..."]
+}
+```
+
+The frontend should chart `monthly_observations`, `annual_values` and `trend.trend_line` as given and display
+`trend`, `interpretation` and `limitations` verbatim. It does not need to compute any statistics.
+`data_origin: "snapshot"` means NASA was unreachable and a saved real response was used; show `retrieved_at`.
+
+## Method (point trends)
+
+1. Fetch monthly values from NASA POWER; drop `-999` fill values.
+2. Annual mean = day-weighted mean of 12 months (matches NASA's own annual value to within 0.01 C). Years with any
+   missing month are excluded, never averaged. Monthly values are not treated as independent samples.
+3. Slope: Theil-Sen (median of pairwise slopes), reported per decade.
+4. Significance: Mann-Kendall with tie correction and continuity correction, two-sided; `significant` means p < 0.05.
+5. 95% CI: Sen's interval from the Mann-Kendall variance (Gilbert 1987), consistent with the slope estimator.
+6. Needs at least 10 complete years. `lag1_autocorrelation` of the detrended series is reported, and
+   `autocorrelation_flag` is set when it is itself significant (|r1| > 1.96/sqrt(n)); p-values are then optimistic.
+
+The code is cross-checked in the tests against `scipy.stats.theilslopes` and `kendalltau`. The interpretation text is
+generated from these numbers by fixed templates; nothing is estimated by a language model.
+
+Limitations: one MERRA-2 cell (0.5 x 0.625 deg) does not represent a country or region; MERRA-2 is a model-assimilated
+reanalysis, not station data; significance does not prove causation.
+
+## Saved data
+
+- `data/grids/*.json`: global trend grids (1981-2025), committed so nobody needs to rebuild them. Rebuild with
+  `python -m app.services.grid_builder <layer_id> [start_year] [end_year]` (about 2 minutes each, reads the public
+  NASA POWER Zarr store). Same method and annual-mean rule as `/api/trends`; the Ottawa cell matches it exactly.
+- `data/snapshots/*.json`: raw NASA responses for specific requests (Ottawa T2M 1990-2025 included). Served only if
+  NASA is unreachable and the request matches exactly. Create one with `python -m app.services.snapshots lat lon var start end`.
 
 ## Globe overlays
 
@@ -54,8 +122,7 @@ Two layer kinds, listed by `GET /api/layers`:
 - `imagery`: rendered NASA GIBS tiles. The frontend loads `tiles.url_template` directly
   (fill `{time}`, `{z}`, `{y}`, `{x}`). Display only; no numbers or significance.
 
-Planned (no verified NASA source yet): deforestation. The grid builder is not written yet; it will reuse the
-vectorised trend code from `trend_analysis.py` so the globe and `/api/trends` give identical results.
+Planned (no verified NASA source yet): deforestation.
 
 ## NASA POWER notes
 
