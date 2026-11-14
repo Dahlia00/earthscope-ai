@@ -1,11 +1,6 @@
-fastapi>=0.115
-uvicorn[standard]>=0.30
-httpx>=0.27
-pydantic>=2.7
-pydantic-settings>=2.3
+-r requirements-prod.txt
+# Offline grid builder and tests only (not needed to run the API)
 pandas>=2.2
-numpy>=2.0
-scipy>=1.13
 xarray>=2024.6
 zarr>=3.0
 fsspec>=2024.6

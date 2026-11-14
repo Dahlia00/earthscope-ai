@@ -151,6 +151,17 @@ Regions have coordinates only; there are no place names. Hotspots are leads, not
 precipitation and humidity, can be affected by changes in assimilated observing systems, and neighbouring cells are not
 independent. The response repeats this in `limitations`.
 
+## Deploy (Render)
+
+`requirements-prod.txt` holds only what the API needs; `requirements.txt` adds the offline grid builder and tests.
+`Dockerfile` runs the API as a non-root user on `$PORT`. The grids and the Ottawa snapshot are baked into the image.
+Tested locally under a 512 MB memory limit: about 110 MB in use, so the free instance size is enough.
+
+Render settings (also in `render.yaml` at the repo root): runtime Docker, branch `main`, Dockerfile path
+`./backend/Dockerfile`, build context `./backend`, health check path `/api/health`.
+Set `EXTRA_CORS_ORIGINS` to the deployed frontend origin (no trailing slash; comma-separate several; no wildcards).
+After deploy, the frontend should use the service URL (`https://<name>.onrender.com`) as its API base URL.
+
 ## Saved data
 
 - `data/grids/*.json`: global trend grids (1981-2025), committed so nobody needs to rebuild them. Rebuild with
