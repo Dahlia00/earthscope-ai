@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.config import Settings, get_settings
-from app.models.schemas import HealthResponse, LayerInfo
+from app.models.schemas import HealthResponse, LayerInfo, VariableInfo
 from app.services.layers import get_layer, grid_path, list_layers
+from app.services.variables import VARIABLES
 
 router = APIRouter(prefix="/api")
 
@@ -10,6 +11,11 @@ router = APIRouter(prefix="/api")
 @router.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(status="ok", service="EarthScope AI Backend")
+
+
+@router.get("/variables", response_model=list[VariableInfo])
+def variables() -> list[VariableInfo]:
+    return list(VARIABLES.values())
 
 
 @router.get("/layers", response_model=list[LayerInfo])

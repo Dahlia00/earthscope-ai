@@ -8,6 +8,17 @@ class HealthResponse(BaseModel):
     service: str
 
 
+class VariableInfo(BaseModel):
+    id: str
+    name: str
+    unit: str
+    trend_unit: str
+    description: str
+    source: str
+    coverage_start_year: int
+    aggregation: str
+
+
 class MonthlyObservation(BaseModel):
     year: int
     month: int
