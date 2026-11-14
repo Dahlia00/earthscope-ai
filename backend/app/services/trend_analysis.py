@@ -8,6 +8,7 @@ Method (Gilbert 1987, Statistical Methods for Environmental Pollution Monitoring
 Assumes independent values; autocorrelation makes p-values too small (lag-1 is reported as a diagnostic).
 """
 
+import calendar
 import math
 from dataclasses import dataclass
 
@@ -40,14 +41,20 @@ class AnnualSeries:
 
 
 def annual_means(observations: list[MonthlyObservation]) -> AnnualSeries:
-    """Mean of 12 monthly values per year; years with any missing month are dropped, not averaged."""
-    by_year: dict[int, list[float]] = {}
+    """Day-weighted mean of 12 monthly values per year (matches NASA's own annual value to within rounding).
+
+    Years with any missing month are dropped, not averaged.
+    """
+    by_year: dict[int, dict[int, float]] = {}
     for obs in observations:
-        by_year.setdefault(obs.year, []).append(obs.value)
-    complete = [
-        AnnualValue(year=y, mean=sum(v) / 12, months_used=12) for y, v in sorted(by_year.items()) if len(v) == 12
-    ]
-    incomplete = sorted(y for y, v in by_year.items() if len(v) != 12)
+        by_year.setdefault(obs.year, {})[obs.month] = obs.value
+    complete = []
+    for year, months in sorted(by_year.items()):
+        if len(months) == 12:
+            days = {m: calendar.monthrange(year, m)[1] for m in months}
+            mean = sum(months[m] * days[m] for m in months) / sum(days.values())
+            complete.append(AnnualValue(year=year, mean=mean, months_used=12))
+    incomplete = sorted(y for y, months in by_year.items() if len(months) != 12)
     return AnnualSeries(values=complete, incomplete_years=incomplete)
 
 

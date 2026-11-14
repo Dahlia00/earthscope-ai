@@ -1,8 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from app.config import Settings, get_settings
-from app.models.schemas import HealthResponse, LayerInfo, VariableInfo
+from app.models.schemas import HealthResponse, LayerInfo, TrendsResponse, VariableInfo
+from app.services import nasa_power
 from app.services.layers import get_layer, grid_path, list_layers
+from app.services.nasa_power import NasaPowerError
+from app.services.trend_analysis import InsufficientDataError
+from app.services.trends import build_trends_response
 from app.services.variables import VARIABLES
 
 router = APIRouter(prefix="/api")
@@ -16,6 +22,36 @@ def health() -> HealthResponse:
 @router.get("/variables", response_model=list[VariableInfo])
 def variables() -> list[VariableInfo]:
     return list(VARIABLES.values())
+
+
+@router.get("/trends", response_model=TrendsResponse)
+def trends(
+    latitude: float = Query(..., ge=-90, le=90),
+    longitude: float = Query(..., ge=-180, le=180),
+    variable: str = Query(...),
+    start_year: int = Query(...),
+    end_year: int = Query(...),
+) -> TrendsResponse:
+    info = VARIABLES.get(variable)
+    if info is None:
+        raise HTTPException(422, f"Unsupported variable {variable!r}. Supported: {', '.join(VARIABLES)}")
+    this_year = datetime.now(timezone.utc).year
+    if start_year < info.coverage_start_year:
+        raise HTTPException(422, f"start_year must be {info.coverage_start_year} or later for {variable}")
+    if end_year > this_year:
+        raise HTTPException(422, f"end_year cannot be after {this_year}")
+    if start_year > end_year:
+        raise HTTPException(422, "start_year must not be after end_year")
+
+    try:
+        series = nasa_power.fetch_monthly_series(latitude, longitude, variable, start_year, end_year)
+    except NasaPowerError as exc:
+        raise HTTPException(502, f"Could not retrieve data from NASA POWER: {exc}") from exc
+    retrieved_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    try:
+        return build_trends_response(series, info, start_year, end_year, "live", retrieved_at)
+    except InsufficientDataError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 @router.get("/layers", response_model=list[LayerInfo])

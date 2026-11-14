@@ -20,11 +20,17 @@ def _monthly(year: int, value: float, months: int = 12) -> list[MonthlyObservati
     return [MonthlyObservation(year=year, month=m, value=value) for m in range(1, months + 1)]
 
 
-def test_annual_means_averages_complete_years() -> None:
-    obs = [MonthlyObservation(year=2000, month=m, value=float(m)) for m in range(1, 13)]
-    series = annual_means(obs)
-    assert series.values[0].mean == pytest.approx(6.5)
-    assert series.incomplete_years == []
+def test_annual_means_are_day_weighted() -> None:
+    # Feb (28 days) = 0, every other month = 10 -> (337 * 10) / 365
+    obs = [MonthlyObservation(year=2001, month=m, value=0.0 if m == 2 else 10.0) for m in range(1, 13)]
+    assert annual_means(obs).values[0].mean == pytest.approx(3370 / 365)
+
+
+def test_annual_means_match_nasa_published_annual_value() -> None:
+    # Real NASA POWER T2M for Ottawa 1990; NASA's own annual value (key 199013) is 5.65
+    real_1990 = [-7.29, -9.97, -3.43, 5.67, 10.82, 17.39, 20.1, 19.44, 13.07, 7.18, 0.7, -6.89]
+    obs = [MonthlyObservation(year=1990, month=m, value=v) for m, v in enumerate(real_1990, start=1)]
+    assert annual_means(obs).values[0].mean == pytest.approx(5.65, abs=0.01)
 
 
 def test_annual_means_drops_incomplete_years_instead_of_averaging_them() -> None:

@@ -12,6 +12,6 @@ VARIABLES: dict[str, VariableInfo] = {
         description="The average air (dry bulb) temperature at 2 meters above the surface of the earth.",
         source="NASA POWER, MERRA-2 reanalysis (monthly)",
         coverage_start_year=1981,
-        aggregation="Annual mean of the 12 monthly values; years with any missing month are excluded.",
+        aggregation="Day-weighted annual mean of the 12 monthly values; years with any missing month are excluded.",
     ),
 }
