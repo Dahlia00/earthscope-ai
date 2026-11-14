@@ -1,0 +1,139 @@
+'use client';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import type { Analysis } from '@/lib/types';
+import { displayUnit } from '@/lib/units';
+export function TrendChart({ analysis, demo }: { analysis: Analysis; demo: boolean }) {
+  const label = analysis.variable_name ?? 'Air temperature';
+  const unit = displayUnit(analysis.unit);
+  const hasData = analysis.observations.some((o) => o.value !== null);
+  const hasTrend = analysis.observations.some((o) => o.trend != null);
+  return (
+    <section className="panel chart-panel" aria-label="Historical observations">
+      <div className="panel-heading">
+        <div>
+          <div className="eyebrow">THE BIG PICTURE {demo && '· DEMO DATA'}</div>
+          <h2>{label} through time</h2>
+        </div>
+        <span className="period">
+          {analysis.start_year} — {analysis.end_year}
+        </span>
+      </div>
+      <div className="chart-legend">
+        <span>
+          <i /> Annual mean · {label}
+        </span>
+        {hasTrend && (
+          <span>
+            <i className="trend-key" /> Backend trend estimate
+          </span>
+        )}
+        <span className="chart-unit">{unit}</span>
+      </div>
+      {hasData ? (
+        <div
+          className="chart"
+          role="img"
+          aria-label={`${demo ? 'Fictional demo' : 'Historical'} ${label} observations from ${analysis.start_year} to ${analysis.end_year}, in ${unit}. An accessible table is available below.`}
+        >
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <LineChart
+              data={analysis.observations}
+              margin={{ top: 15, right: 12, left: 0, bottom: 10 }}
+            >
+              <CartesianGrid stroke="#213044" strokeDasharray="3 6" vertical={false} />
+              <XAxis
+                dataKey="year"
+                stroke="#8b9bb0"
+                tickLine={false}
+                axisLine={false}
+                minTickGap={30}
+                tick={{ fontSize: 11 }}
+                dy={12}
+              />
+              <YAxis
+                stroke="#8b9bb0"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+                width={38}
+                domain={['auto', 'auto']}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: '#102132',
+                  border: '1px solid #334b60',
+                  borderRadius: 8,
+                  color: '#e5f4f7',
+                }}
+                labelFormatter={(year) => `Year ${year}`}
+                formatter={(v, name) => [`${v} ${unit}`, name]}
+              />
+              <Line
+                type="linear"
+                dataKey="value"
+                name={label}
+                stroke="#65e8e2"
+                strokeWidth={2.5}
+                dot={{ r: 2, fill: '#65e8e2', strokeWidth: 0 }}
+                activeDot={{ r: 6, stroke: '#0c1726', strokeWidth: 3 }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+              {hasTrend && (
+                <Line
+                  name="Backend trend estimate"
+                  isAnimationActive={false}
+                  dataKey="trend"
+                  stroke="#b3a2ff"
+                  strokeDasharray="5 5"
+                  dot={false}
+                  connectNulls={false}
+                />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="empty-state">
+          No observations were returned for this selection. Try another period.
+        </div>
+      )}
+      <div className="chart-source">
+        <span>Source: {analysis.source}</span>
+        <span>Gaps indicate missing observations</span>
+      </div>
+      <details className="data-table">
+        <summary>View observation data</summary>
+        <div>
+          <table>
+            <caption>{demo ? 'Fictional demo data' : analysis.source}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Year</th>
+                <th scope="col">
+                  {label} ({unit})
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {analysis.observations.map((o, i) => (
+                <tr key={`${o.year}-${i}`}>
+                  <td>{o.year}</td>
+                  <td>{o.value ?? 'Missing'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+  );
+}
