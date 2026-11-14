@@ -12,6 +12,7 @@ Layers without a verified NASA source stay "planned"; they are never backed by m
 from pathlib import Path
 
 from app.models.schemas import LayerInfo, TileSource
+from app.services.variables import VARIABLES
 
 _POWER_SOURCE = "NASA POWER, MERRA-2 monthly (Zarr)"
 _REANALYSIS_NOTE = (
@@ -27,6 +28,9 @@ _GIBS_EPSG3857 = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best"
 # layer id -> POWER variable; used by the grid builder
 TREND_LAYER_VARIABLE: dict[str, str] = {}
 
+# Variables where a change relative to the mean is meaningful (not degrees Celsius)
+RATIO_SCALE_VARIABLES = {"PRECTOTCORR", "RH2M", "T2M_RANGE"}
+
 
 def _trend_layer(id: str, name: str, category: str, variable: str, unit: str, description: str) -> LayerInfo:
     TREND_LAYER_VARIABLE[id] = variable
@@ -38,7 +42,7 @@ def _trend_layer(id: str, name: str, category: str, variable: str, unit: str, de
         status="not_built",
         description=description,
         unit=unit,
-        trend_unit=f"{unit}/decade",
+        trend_unit=VARIABLES[variable].trend_unit if variable in VARIABLES else f"{unit}/decade",
         source=f"{_POWER_SOURCE}, variable {variable}",
         limitations=_REANALYSIS_NOTE,
     )

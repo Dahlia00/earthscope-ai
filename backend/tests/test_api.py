@@ -143,3 +143,20 @@ def test_trends_humidity_reports_percentage_points(monkeypatch) -> None:
     assert body["variable"]["trend_unit"] == "percentage points/decade"
     assert body["trend"]["slope_per_decade"] == pytest.approx(-0.3, abs=1e-3)
     assert "decreased by an estimated 0.30 percentage points per decade" in body["interpretation"]
+
+
+def test_trends_warns_when_change_is_implausibly_large_for_the_local_mean(monkeypatch) -> None:
+    # Mean ~10 and total change 0.05 * 35 = 1.75 is small; 0.5 per year gives +175%, which must be flagged
+    series = _series(1990, 2025, per_year=0.5).model_copy(update={"parameter": "PRECTOTCORR", "unit": "mm/day"})
+    _mock_nasa(monkeypatch, series)
+    body = client.get("/api/trends", params={**TRENDS_PARAMS, "variable": "PRECTOTCORR"}).json()
+    assert len(body["warnings"]) == 1 and "implausibly large" in body["warnings"][0]
+
+
+def test_trends_has_no_warning_for_plausible_precipitation_or_for_temperature(monkeypatch) -> None:
+    plausible = _series(1990, 2025, per_year=0.02).model_copy(update={"parameter": "PRECTOTCORR", "unit": "mm/day"})
+    _mock_nasa(monkeypatch, plausible)
+    assert client.get("/api/trends", params={**TRENDS_PARAMS, "variable": "PRECTOTCORR"}).json()["warnings"] == []
+    # Temperature is never screened, even with a huge change
+    _mock_nasa(monkeypatch, _series(1990, 2025, per_year=0.5))
+    assert client.get("/api/trends", params=TRENDS_PARAMS).json()["warnings"] == []

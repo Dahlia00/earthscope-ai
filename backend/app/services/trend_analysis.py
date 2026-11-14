@@ -20,6 +20,7 @@ from app.models.schemas import AnnualValue, MonthlyObservation, TrendPoint, Tren
 MIN_YEARS = 10
 SIGNIFICANCE_LEVEL = 0.05
 CONFIDENCE_LEVEL = 0.95
+SUSPECT_RELATIVE_CHANGE = 0.5
 
 LIMITATIONS = [
     "Statistical significance does not prove causation.",
@@ -32,6 +33,17 @@ LIMITATIONS = [
 
 class InsufficientDataError(ValueError):
     """Too few complete years to estimate a trend."""
+
+
+def magnitude_check(total_change: float, baseline_mean: float) -> tuple[float, str | None]:
+    """Relative change over the period, and a warning if it is implausibly large (ratio-scale variables only)."""
+    relative = total_change / baseline_mean
+    if abs(relative) <= SUSPECT_RELATIVE_CHANGE:
+        return relative, None
+    return relative, (
+        f"The estimated change is {relative:+.0%} of the local period mean, which is implausibly large for this "
+        "variable and may be a reanalysis artefact. Verify against independent data before drawing conclusions."
+    )
 
 
 @dataclass(frozen=True)

@@ -7,7 +7,8 @@ from app.models.schemas import (
     VariableInfo,
     VariableRef,
 )
-from app.services.trend_analysis import LIMITATIONS, analyze_annual_series, annual_means, interpret
+from app.services.layers import RATIO_SCALE_VARIABLES
+from app.services.trend_analysis import LIMITATIONS, analyze_annual_series, annual_means, interpret, magnitude_check
 
 
 def build_trends_response(
@@ -22,6 +23,12 @@ def build_trends_response(
     annual = annual_means(series.observations)
     trend = analyze_annual_series(annual.values)
     first, last = annual.values[0].year, annual.values[-1].year
+    warnings = []
+    mean_level = sum(a.mean for a in annual.values) / len(annual.values)
+    if variable.id in RATIO_SCALE_VARIABLES and mean_level > 0:
+        _, warning = magnitude_check(trend.slope_per_decade * (last - first) / 10, mean_level)
+        if warning:
+            warnings.append(warning)
     return TrendsResponse(
         location=Location(
             requested_latitude=series.requested_latitude,
@@ -50,5 +57,6 @@ def build_trends_response(
         annual_values=annual.values,
         trend=trend,
         interpretation=interpret(trend, variable.name, series.unit, first, last, len(annual.values)),
+        warnings=warnings,
         limitations=LIMITATIONS,
     )

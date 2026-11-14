@@ -29,6 +29,23 @@ def test_registry_ids_unique() -> None:
     assert len(ids) == len(set(ids))
 
 
+def test_layer_units_agree_with_variable_registry_and_built_grids() -> None:
+    from app.config import DEFAULT_GRID_DIR
+    from app.services.layers import TREND_LAYER_VARIABLE
+    from app.services.variables import VARIABLES
+
+    for layer in LAYERS:
+        if layer.kind != "trend_grid":
+            continue
+        variable = TREND_LAYER_VARIABLE[layer.id]
+        if variable in VARIABLES:
+            assert (layer.unit, layer.trend_unit) == (VARIABLES[variable].unit, VARIABLES[variable].trend_unit)
+        built = DEFAULT_GRID_DIR / f"{layer.id}.json"
+        if built.is_file():
+            meta = json.loads(built.read_text())
+            assert (meta["unit"], meta["trend_unit"]) == (layer.unit, layer.trend_unit), layer.id
+
+
 def test_imagery_layers_have_complete_tile_templates() -> None:
     for layer in LAYERS:
         if layer.kind == "imagery" and layer.status == "available":

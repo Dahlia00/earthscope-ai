@@ -3,7 +3,7 @@
   "variable": {"id": "T2M", "name": "Air temperature at 2 m", "unit": "C", "trend_unit": "C/decade"},
   "source": "NASA POWER (MERRA2)",
   "data_origin": "live",
-  "retrieved_at": "2026-11-14T17:27:19+00:00",
+  "retrieved_at": "2026-11-14T18:08:13+00:00",
   "period": {"requested_start_year": 1990, "requested_end_year": 2025, "analyzed_start_year": 1990, "analyzed_end_year": 2025},
   "counts": {
     "monthly_valid": 432,
@@ -535,12 +535,7 @@
       {"year": 2025, "value": 6.327956759487975}
     ]
   },
-  "interpretation": "From 1990 to 2025 (36 complete years), annual mean air temperature at 2 m at this location increased by an estimated 0.50 \u00b0C per decade (95% CI +0.21 to +0.75 \u00b0C per decade), about +1.75 \u00b0C over the period. The Mann-Kendall test gives p = 0.0029, below 0.05, so the trend is statistically significant.",
-  "limitations": [
-    "Statistical significance does not prove causation.",
-    "Result is for one MERRA-2 grid cell (about 0.5 x 0.625 degrees); it does not represent a country or region.",
-    "MERRA-2 is a model-assimilated reanalysis, not direct station observations.",
-    "The Mann-Kendall test assumes independent annual values; positive autocorrelation makes p-values too small.",
-    "Years with any missing month are excluded from the annual series."
-  ]
+  "interpretation": "From 1990 to 2025 (36 complete years), annual mean air temperature at 2 m at this location increased by an estimated 0.50 °C per decade (95% CI +0.21 to +0.75 °C per decade), about +1.75 °C over the period. The Mann-Kendall test gives p = 0.0029, below 0.05, so the trend is statistically significant.",
+  "warnings": [],
+  "limitations": ["Statistical significance does not prove causation.", "Result is for one MERRA-2 grid cell (about 0.5 x 0.625 degrees); it does not represent a country or region.", "MERRA-2 is a model-assimilated reanalysis, not direct station observations.", "The Mann-Kendall test assumes independent annual values; positive autocorrelation makes p-values too small.", "Years with any missing month are excluded from the annual series."]
 }

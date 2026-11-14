@@ -112,6 +112,8 @@ class TrendsResponse(BaseModel):
     annual_values: list[AnnualValue]
     trend: TrendStats
     interpretation: str
+    # Data-quality cautions the frontend should show next to the result (empty when none apply)
+    warnings: list[str]
     limitations: list[str]
 
 
@@ -162,6 +164,8 @@ class TrendGrid(BaseModel):
     lon: GridAxis
     slope: list[list[float | None]]
     p_value: list[list[float | None]]
+    # Period mean of the annual values, in `unit`; lets consumers judge how large a trend is relative to the climate
+    baseline: list[list[float | None]] | None = None
 
 
 class LatLon(BaseModel):
@@ -191,6 +195,11 @@ class Hotspot(BaseModel):
     strength: float  # robust z-score: mean_slope / (1.4826 * MAD of all cell slopes)
     score: int  # ranking score: |mean_slope| * area_km2 (cluster mass)
     total_change: float  # mean_slope over the whole period, in the layer's unit
+    baseline_mean: float | None  # area-weighted period mean in the layer's unit
+    relative_change: float | None  # total_change / baseline_mean; only for ratio-scale variables
+    # suspect_magnitude: change is implausibly large relative to the local mean; likely a reanalysis artefact
+    quality_flag: Literal["ok", "suspect_magnitude", "not_assessed"]
+    warning: str | None
     peak: PeakCell
     centroid: LatLon
     bounds: Bounds
@@ -204,6 +213,7 @@ class HotspotParameters(BaseModel):
     magnitude_threshold: float
     min_cells: int
     robust_scale: float
+    suspect_relative_change: float
 
 
 class HotspotCounts(BaseModel):
@@ -212,6 +222,7 @@ class HotspotCounts(BaseModel):
     candidate_cells: int
     regions_found: int
     regions_after_min_size: int
+    suspect_regions: int
 
 
 class HotspotsResponse(BaseModel):
@@ -225,5 +236,7 @@ class HotspotsResponse(BaseModel):
     method: str
     parameters: HotspotParameters
     counts: HotspotCounts
+    # Set when most strong-trend regions are flagged suspect_magnitude: the whole layer is unreliable
+    layer_warning: str | None
     hotspots: list[Hotspot]
     limitations: list[str]

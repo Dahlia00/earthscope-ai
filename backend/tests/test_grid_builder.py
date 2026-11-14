@@ -15,17 +15,19 @@ def _monthly(per_year_slopes: list[float], base: float = 10.0) -> np.ndarray:
 
 
 def test_known_slopes_recovered_per_cell() -> None:
-    slope, p = trends_for_cells(_monthly([0.05, -0.02, 0.0]), YEARS)
+    slope, p, baseline = trends_for_cells(_monthly([0.05, -0.02, 0.0]), YEARS)
     assert slope[0] == pytest.approx(0.5)
     assert slope[1] == pytest.approx(-0.2)
     assert slope[2] == pytest.approx(0.0)
     assert p[0] < 1e-4 and p[1] < 1e-2 and p[2] == 1.0
+    # year-mean of 10 + s*(y-2000) over 2000..2019 is 10 + s*9.5
+    assert baseline == pytest.approx([10.475, 9.81, 10.0])
 
 
 def test_cell_with_a_missing_month_is_nan_not_a_partial_trend() -> None:
     monthly = _monthly([0.05, 0.05])
     monthly[37, 1] = np.nan
-    slope, p = trends_for_cells(monthly, YEARS)
+    slope, p, _ = trends_for_cells(monthly, YEARS)
     assert slope[0] == pytest.approx(0.5)
     assert np.isnan(slope[1]) and np.isnan(p[1])
 

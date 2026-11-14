@@ -133,6 +133,20 @@ Each hotspot has `mean_slope`, `total_change`, `area_km2`, `n_cells`, `peak` cel
 `counts` and `parameters` show how many cells survived each step. Example: `sample_responses/hotspots_temperature_trend.json`.
 For `temperature_trend` the top hotspot is 1,714 cells (about 1.3 million km²) at lat 70-84, lon 10-92, +1.00 C/decade.
 
+### Data-quality flags (show these in the UI)
+
+5. For precipitation, humidity and temperature range, each hotspot's `total_change` is compared with its local period
+   mean (`baseline_mean`). If the change exceeds 50% of the mean, `quality_flag` is `suspect_magnitude`, `warning`
+   explains why, and the hotspot is ranked after every unflagged one. Temperature (degrees C) has no meaningful relative
+   change, so it is `not_assessed`. Otherwise `ok`.
+6. If at least half of a layer's regions are flagged, `layer_warning` is set. **Precipitation currently triggers this
+   (23 of 24 regions).** In the top cells, annual precipitation rises 1.9x to 3.6x between the first and last decade, while a
+   control cell (Ottawa) is flat. That is not a credible climate signal, so treat the precipitation layer as unreliable.
+   The cause is unconfirmed. Humidity and temperature range pass the check.
+
+`/api/trends` applies the same check and returns `warnings` (a list, empty when none apply); show them next to the result.
+Samples: `sample_responses/hotspots_precipitation_trend_flagged.json`.
+
 Regions have coordinates only; there are no place names. Hotspots are leads, not findings: MERRA-2 trends, especially
 precipitation and humidity, can be affected by changes in assimilated observing systems, and neighbouring cells are not
 independent. The response repeats this in `limitations`.

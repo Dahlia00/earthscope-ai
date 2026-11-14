@@ -7,6 +7,8 @@ Method:
   3. Merge adjacent same-sign cells (8-neighbour, wrapping across the antimeridian) into regions.
   4. Drop regions smaller than MIN_CELLS and rank by cluster mass: |area-weighted mean slope| x area.
      Mass favours large coherent signals over tiny extreme patches, which are the likeliest artefacts.
+  5. For ratio-scale variables, flag regions whose total change exceeds SUSPECT_RELATIVE_CHANGE of the local
+     period mean (for example precipitation tripling) and rank them after all unflagged regions.
 """
 
 import json
@@ -30,6 +32,9 @@ from app.models.schemas import (
     PeakCell,
 )
 
+from app.services.layers import RATIO_SCALE_VARIABLES
+from app.services.trend_analysis import SUSPECT_RELATIVE_CHANGE, magnitude_check
+
 FDR_Q = 0.05
 MAGNITUDE_PERCENTILE = 98.0
 MIN_CELLS = 6
@@ -46,10 +51,15 @@ LIMITATIONS = [
     "Neighbouring cells are spatially correlated, so FDR control is approximate and regions are not independent tests.",
     "Ranking favours large regions with strong trends; it does not measure how unusual a trend is relative to natural variability.",
     "Regions are identified by coordinates only; no place names are assigned.",
+    "Regions flagged suspect_magnitude change by more than half of their local mean over the period; such changes are "
+    "implausible for real climate and may be reanalysis artefacts. They are ranked after all other regions.",
+    "Temperature (degrees Celsius) is not screened for implausible magnitude because relative change is not defined.",
 ]
 
 
 def _label(text: str) -> str:
+    if text == "%":
+        return "percentage points"
     return "°C" + text[1:] if text.startswith("C") else text
 
 
@@ -61,9 +71,10 @@ def _norm_lon(x: float | np.ndarray):
 def _load(path: str, mtime_ns: int) -> dict:
     raw = json.loads(Path(path).read_text())
     return {
-        "meta": {k: v for k, v in raw.items() if k not in ("slope", "p_value")},
+        "meta": {k: v for k, v in raw.items() if k not in ("slope", "p_value", "baseline")},
         "slope": np.array(raw["slope"], dtype=float),
         "p": np.array(raw["p_value"], dtype=float),
+        "baseline": np.array(raw["baseline"], dtype=float) if raw.get("baseline") else None,
     }
 
 
@@ -108,7 +119,7 @@ def find_hotspots(
     grid_file: Path, layer: LayerInfo, direction: Literal["increase", "decrease", "both"], limit: int
 ) -> HotspotsResponse:
     data = _load(str(grid_file), grid_file.stat().st_mtime_ns)
-    meta, slope, p = data["meta"], data["slope"], data["p"]
+    meta, slope, p, baseline = data["meta"], data["slope"], data["p"], data["baseline"]
     lat = meta["lat"]["start"] + meta["lat"]["step"] * np.arange(meta["lat"]["count"])
     lon = meta["lon"]["start"] + meta["lon"]["step"] * np.arange(meta["lon"]["count"])
     lat_step, lon_step = meta["lat"]["step"], meta["lon"]["step"]
@@ -132,9 +143,18 @@ def find_hotspots(
             if len(rows) < MIN_CELLS:
                 continue
             kept += 1
-            hotspots.append(_describe(sign, rows, cols, slope, p, lat, lon, area, scale, lat_step, lon_step, meta, layer))
+            hotspots.append(
+                _describe(sign, rows, cols, slope, p, baseline, lat, lon, area, scale, lat_step, lon_step, meta, layer)
+            )
 
-    hotspots.sort(key=lambda h: -h.score)
+    suspect = sum(h.quality_flag == "suspect_magnitude" for h in hotspots)
+    layer_warning = None
+    if kept and suspect / kept >= 0.5:
+        layer_warning = (
+            f"{suspect} of {kept} strong-trend regions in this layer show implausibly large changes relative to "
+            "their local mean, which may indicate reanalysis artefacts. Treat all of its hotspots with caution."
+        )
+    hotspots.sort(key=lambda h: (h.quality_flag == "suspect_magnitude", -h.score))
     hotspots = [h.model_copy(update={"rank": i}) for i, h in enumerate(hotspots[:limit], start=1)]
     return HotspotsResponse(
         layer_id=layer.id,
@@ -151,6 +171,7 @@ def find_hotspots(
             magnitude_threshold=round(threshold, 4),
             min_cells=MIN_CELLS,
             robust_scale=round(scale, 4),
+            suspect_relative_change=SUSPECT_RELATIVE_CHANGE,
         ),
         counts=HotspotCounts(
             valid_cells=int(valid.sum()),
@@ -158,13 +179,15 @@ def find_hotspots(
             candidate_cells=int(candidates.sum()),
             regions_found=found,
             regions_after_min_size=kept,
+            suspect_regions=suspect,
         ),
         hotspots=hotspots,
+        layer_warning=layer_warning,
         limitations=LIMITATIONS,
     )
 
 
-def _describe(sign, rows, cols, slope, p, lat, lon, area, scale, lat_step, lon_step, meta, layer) -> Hotspot:
+def _describe(sign, rows, cols, slope, p, baseline, lat, lon, area, scale, lat_step, lon_step, meta, layer) -> Hotspot:
     w = area[rows, cols]
     s = slope[rows, cols]
     mean_slope = float(np.average(s, weights=w))
@@ -191,6 +214,15 @@ def _describe(sign, rows, cols, slope, p, lat, lon, area, scale, lat_step, lon_s
 
     years = meta["period_end_year"] - meta["period_start_year"]
     total_change = mean_slope * years / 10
+
+    baseline_mean = relative_change = warning = None
+    flag = "not_assessed"
+    if baseline is not None:
+        b = baseline[rows, cols]
+        baseline_mean = float(np.average(b, weights=w))
+        if meta["variable"] in RATIO_SCALE_VARIABLES and baseline_mean > 0:
+            relative_change, warning = magnitude_check(total_change, baseline_mean)
+            flag = "ok" if warning is None else "suspect_magnitude"
     subject = layer.name.removesuffix(" trend").lower()
     d = 2 if abs(mean_slope) >= 0.1 else 3  # small-valued variables need more decimals
     description = (
@@ -207,6 +239,10 @@ def _describe(sign, rows, cols, slope, p, lat, lon, area, scale, lat_step, lon_s
         strength=round(mean_slope / scale, 2) if scale > 0 else 0.0,
         score=round(abs(mean_slope) * total_area),
         total_change=round(total_change, 3),
+        baseline_mean=None if baseline_mean is None else round(baseline_mean, 3),
+        relative_change=None if relative_change is None else round(relative_change, 3),
+        quality_flag=flag,
+        warning=warning,
         peak=PeakCell(
             latitude=float(lat[rows[peak]]),
             longitude=float(lon[cols[peak]]),

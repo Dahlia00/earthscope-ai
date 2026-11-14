@@ -16,36 +16,45 @@ LAYER = next(layer for layer in LAYERS if layer.id == "temperature_trend")
 N_LAT, N_LON, LAT_STEP, LON_STEP = 41, 72, 4.5, 5.0  # lat -90..90, lon -180..175 (full circle)
 
 
-def _write_grid(path: Path, slope: np.ndarray, p: np.ndarray) -> Path:
+def _write_grid(
+    path: Path, slope: np.ndarray, p: np.ndarray, variable: str = "T2M", baseline: np.ndarray | None = None
+) -> Path:
     def lists(a: np.ndarray) -> list[list[float | None]]:
         return [[None if np.isnan(v) else float(v) for v in row] for row in a]
 
     grid = TrendGrid(
-        layer_id="temperature_trend", variable="T2M", unit="C", trend_unit="C/decade", source="synthetic",
+        layer_id="temperature_trend", variable=variable, unit="C", trend_unit="C/decade", source="synthetic",
         method="synthetic", period_start_year=1981, period_end_year=2025, significance_level=0.05,
         lat={"start": -90.0, "step": LAT_STEP, "count": N_LAT}, lon={"start": -180.0, "step": LON_STEP, "count": N_LON},
-        slope=lists(slope), p_value=lists(p),
+        slope=lists(slope), p_value=lists(p), baseline=None if baseline is None else lists(baseline),
     )
     path.write_text(grid.model_dump_json())
     return path
 
 
-def _planted(tmp_path: Path):
+REGION_A = (range(20, 25), range(10, 15))  # +25 cells, highest score
+REGION_B = (range(10, 15), range(30, 35))  # -25 cells
+REGION_C = (range(25, 28), [70, 71, 0, 1])  # +12 cells across the antimeridian
+
+
+def _planted(tmp_path: Path, variable: str = "T2M", baselines: dict[str, float] | None = None):
     """Quiet background plus known blocks: +25 cells, -25 cells, +12 cells across the antimeridian, 1 lone cell."""
     rng = np.random.default_rng(0)
     slope = rng.normal(0, 0.05, (N_LAT, N_LON))
     p = rng.uniform(0.2, 1.0, (N_LAT, N_LON))
     slope[0, :], p[0, :] = np.nan, np.nan  # null row
-    for rows, cols, value in [
-        (range(20, 25), range(10, 15), 1.0),
-        (range(10, 15), range(30, 35), -1.0),
-        (range(25, 28), [70, 71, 0, 1], 1.0),
-        ([30], [50], 1.0),
-    ]:
+    for rows, cols, value in [(*REGION_A, 1.0), (*REGION_B, -1.0), (*REGION_C, 1.0), ([30], [50], 1.0)]:
         for r in rows:
             for c in cols:
                 slope[r, c], p[r, c] = value, 1e-6
-    return _write_grid(tmp_path / "grid.json", slope, p)
+    baseline = None
+    if baselines is not None:
+        baseline = np.full((N_LAT, N_LON), 100.0)
+        for name, region in {"A": REGION_A, "B": REGION_B, "C": REGION_C}.items():
+            for r in region[0]:
+                for c in region[1]:
+                    baseline[r, c] = baselines.get(name, 100.0)
+    return _write_grid(tmp_path / "grid.json", slope, p, variable, baseline)
 
 
 def test_planted_regions_are_found_with_correct_geometry(tmp_path: Path) -> None:
@@ -124,3 +133,54 @@ def test_endpoint_errors(grid_dir: Path) -> None:
     assert client.get(url, params={"layer_id": "temperature_trend", "direction": "up"}).status_code == 422
     assert client.get(url, params={"layer_id": "temperature_trend", "limit": 0}).status_code == 422
     assert client.get(url, params={"layer_id": "temperature_trend", "limit": 51}).status_code == 422
+
+
+PRECIP = next(layer for layer in LAYERS if layer.id == "precipitation_trend")
+
+
+def test_implausibly_large_change_is_flagged_and_ranked_last_despite_top_score(tmp_path: Path) -> None:
+    # Region A has the highest raw score but its change (4.4) is 220% of its local mean (2.0)
+    grid = _planted(tmp_path, variable="PRECTOTCORR", baselines={"A": 2.0})
+    result = find_hotspots(grid, PRECIP, "both", 10)
+    flags = [(h.n_cells, h.direction, h.quality_flag) for h in result.hotspots]
+    assert flags[-1] == (25, "increase", "suspect_magnitude")
+    assert all(f[2] == "ok" for f in flags[:-1])
+    suspect = result.hotspots[-1]
+    assert suspect.relative_change == pytest.approx(2.2) and suspect.baseline_mean == pytest.approx(2.0)
+    assert "implausibly" in suspect.warning
+    assert result.counts.suspect_regions == 1 and result.layer_warning is None
+    assert [h.rank for h in result.hotspots] == [1, 2, 3]
+
+
+def test_layer_warning_when_most_regions_are_suspect(tmp_path: Path) -> None:
+    grid = _planted(tmp_path, variable="PRECTOTCORR", baselines={"A": 2.0, "B": 2.0})
+    result = find_hotspots(grid, PRECIP, "both", 10)
+    assert result.counts.suspect_regions == 2
+    assert "2 of 3" in result.layer_warning
+
+
+def test_plausible_change_is_ok(tmp_path: Path) -> None:
+    result = find_hotspots(_planted(tmp_path, variable="RH2M", baselines={}), PRECIP, "both", 10)
+    assert {h.quality_flag for h in result.hotspots} == {"ok"}
+    assert all(h.warning is None for h in result.hotspots)
+
+
+def test_temperature_is_not_screened() -> None:
+    # Relative change of a degrees-Celsius value is meaningless, so it must not be judged
+    grid = Settings().grid_data_dir / "temperature_trend.json"
+    result = find_hotspots(grid, LAYER, "both", 5)
+    assert {h.quality_flag for h in result.hotspots} == {"not_assessed"}
+    assert all(h.relative_change is None for h in result.hotspots)
+
+
+def test_grid_without_baseline_is_not_assessed(tmp_path: Path) -> None:
+    result = find_hotspots(_planted(tmp_path, variable="PRECTOTCORR"), PRECIP, "both", 10)
+    assert {h.quality_flag for h in result.hotspots} == {"not_assessed"}
+
+
+def test_real_precipitation_grid_is_flagged_as_unreliable() -> None:
+    # Checked by hand: annual precipitation at these cells rises 1.9x to 3.6x, while a control cell is stable
+    grid = Settings().grid_data_dir / "precipitation_trend.json"
+    result = find_hotspots(grid, PRECIP, "both", 5)
+    assert result.layer_warning is not None
+    assert result.counts.suspect_regions / result.counts.regions_after_min_size > 0.5

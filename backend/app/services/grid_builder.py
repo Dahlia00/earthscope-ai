@@ -39,8 +39,8 @@ def annual_from_monthly(monthly: np.ndarray, years: list[int]) -> np.ndarray:
     return (cells * days).sum(axis=1) / days.sum(axis=1)
 
 
-def trends_for_cells(monthly: np.ndarray, years: list[int]) -> tuple[np.ndarray, np.ndarray]:
-    """Return (slope per decade, p-value), each shape (cells,)."""
+def trends_for_cells(monthly: np.ndarray, years: list[int]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return (slope per decade, p-value, period mean of annual values), each shape (cells,)."""
     annual = annual_from_monthly(monthly, years)
     t = np.array(years, dtype=float)
     slope = np.empty(annual.shape[1])
@@ -49,7 +49,7 @@ def trends_for_cells(monthly: np.ndarray, years: list[int]) -> tuple[np.ndarray,
         r = trend_columns(t, annual[:, a : a + COLUMN_CHUNK])
         slope[a : a + COLUMN_CHUNK] = r["slope"] * 10
         p_value[a : a + COLUMN_CHUNK] = r["p_value"]
-    return slope, p_value
+    return slope, p_value, annual.mean(axis=0)
 
 
 def _axis(values: np.ndarray) -> GridAxis:
@@ -91,14 +91,16 @@ def build_grid(layer_id: str, start_year: int = DEFAULT_START_YEAR, end_year: in
     lo, hi = da.attrs.get("valid_min"), da.attrs.get("valid_max")
     slope = np.full((n_lat, n_lon), np.nan)
     p_value = np.full((n_lat, n_lon), np.nan)
+    baseline = np.full((n_lat, n_lon), np.nan)
 
     for a in range(0, n_lat, LAT_BAND):
         band = da.isel(lat=slice(a, a + LAT_BAND)).values.astype(float)  # (time, lat, lon)
         if lo is not None and hi is not None:
             band = np.where((band >= lo) & (band <= hi), band, np.nan)
-        s, p = trends_for_cells(band.reshape(band.shape[0], -1), years)
+        s, p, b = trends_for_cells(band.reshape(band.shape[0], -1), years)
         slope[a : a + band.shape[1]] = s.reshape(band.shape[1], n_lon)
         p_value[a : a + band.shape[1]] = p.reshape(band.shape[1], n_lon)
+        baseline[a : a + band.shape[1]] = b.reshape(band.shape[1], n_lon)
         print(f"  lat rows {a}-{a + band.shape[1] - 1} done", flush=True)
 
     if np.isnan(slope).all():
@@ -118,6 +120,7 @@ def build_grid(layer_id: str, start_year: int = DEFAULT_START_YEAR, end_year: in
         lon=lon_axis,
         slope=_to_lists(slope, 3),
         p_value=_to_lists(p_value, 4),
+        baseline=_to_lists(baseline, 2),
     )
     path = grid_path(settings.grid_data_dir, layer_id)
     path.parent.mkdir(parents=True, exist_ok=True)
