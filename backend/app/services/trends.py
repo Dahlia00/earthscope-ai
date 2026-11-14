@@ -30,7 +30,7 @@ def build_trends_response(
             cell_longitude=series.cell_longitude,
             elevation_m=series.elevation_m,
         ),
-        variable=VariableRef(id=variable.id, name=variable.name, unit=series.unit),
+        variable=VariableRef(id=variable.id, name=variable.name, unit=series.unit, trend_unit=variable.trend_unit),
         source=series.source,
         data_origin=data_origin,
         retrieved_at=retrieved_at,

@@ -82,6 +82,7 @@ class VariableRef(BaseModel):
     id: str
     name: str
     unit: str
+    trend_unit: str
 
 
 class Period(BaseModel):

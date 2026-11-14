@@ -1,9 +1,9 @@
 {
   "location": {"requested_latitude": 45.4215, "requested_longitude": -75.6972, "cell_latitude": 45.5, "cell_longitude": -75.625, "elevation_m": 123.92},
-  "variable": {"id": "T2M", "name": "Air temperature at 2 m", "unit": "C"},
+  "variable": {"id": "T2M", "name": "Air temperature at 2 m", "unit": "C", "trend_unit": "C/decade"},
   "source": "NASA POWER (MERRA2)",
   "data_origin": "live",
-  "retrieved_at": "2026-11-14T17:20:22+00:00",
+  "retrieved_at": "2026-11-14T17:27:19+00:00",
   "period": {"requested_start_year": 1990, "requested_end_year": 2025, "analyzed_start_year": 1990, "analyzed_end_year": 2025},
   "counts": {
     "monthly_valid": 432,

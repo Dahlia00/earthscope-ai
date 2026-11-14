@@ -52,6 +52,14 @@ GET /api/trends?latitude=45.4215&longitude=-75.6972&variable=T2M&start_year=1990
 All five parameters are required. `latitude` -90..90, `longitude` -180..180, `variable` from `/api/variables`,
 `start_year` >= the variable's `coverage_start_year` (1981), `end_year` not in the future, start <= end.
 
+Supported `variable` values (all NASA POWER monthly, MERRA-2, 1981 onward; checked against the live API):
+
+| id | Unit | Trend unit |
+| --- | --- | --- |
+| `T2M` | C | C/decade |
+| `PRECTOTCORR` | mm/day | mm/day/decade |
+| `RH2M` | % | percentage points/decade (an absolute change, not a relative one) |
+
 | Status | Meaning |
 | --- | --- |
 | 200 | Result (shape below) |
@@ -63,7 +71,7 @@ The full real response for Ottawa is in `sample_responses/trends_ottawa_t2m_1990
 ```json
 {
   "location": {"requested_latitude": 45.4215, "requested_longitude": -75.6972, "cell_latitude": 45.5, "cell_longitude": -75.625, "elevation_m": 123.92},
-  "variable": {"id": "T2M", "name": "Air temperature at 2 m", "unit": "C"},
+  "variable": {"id": "T2M", "name": "Air temperature at 2 m", "unit": "C", "trend_unit": "C/decade"},
   "source": "NASA POWER (MERRA2)",
   "data_origin": "live",
   "retrieved_at": "2026-11-14T17:20:22+00:00",

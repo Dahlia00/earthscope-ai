@@ -139,23 +139,25 @@ def _lag1_autocorrelation(residuals: np.ndarray) -> float:
 
 
 def interpret(stats: TrendStats, variable_name: str, unit: str, first_year: int, last_year: int, n_years: int) -> str:
-    label = "°C" if unit == "C" else unit
+    label = {"C": "°C", "%": "percentage points"}.get(unit, unit)
     lo, hi = stats.ci_lower_per_decade, stats.ci_upper_per_decade
+    # Small-valued variables (e.g. precipitation in mm/day) need more decimals to avoid rounding to zero
+    d = 2 if max(abs(stats.slope_per_decade), abs(lo), abs(hi)) >= 0.1 else 3
     span_change = stats.slope_per_decade * (last_year - first_year) / 10
-    ci = f"95% CI {lo:+.2f} to {hi:+.2f} {label} per decade"
+    ci = f"95% CI {lo:+.{d}f} to {hi:+.{d}f} {label} per decade"
     if stats.significant:
         direction = "increased" if stats.slope_per_decade > 0 else "decreased"
         text = (
             f"From {first_year} to {last_year} ({n_years} complete years), annual mean {variable_name.lower()} at this "
-            f"location {direction} by an estimated {abs(stats.slope_per_decade):.2f} {label} per decade ({ci}), "
-            f"about {span_change:+.2f} {label} over the period. The Mann-Kendall test gives p = {_fmt_p(stats.p_value)}, "
+            f"location {direction} by an estimated {abs(stats.slope_per_decade):.{d}f} {label} per decade ({ci}), "
+            f"about {span_change:+.{d}f} {label} over the period. The Mann-Kendall test gives {_fmt_p(stats.p_value)}, "
             f"below {stats.significance_level}, so the trend is statistically significant."
         )
     else:
         text = (
             f"From {first_year} to {last_year} ({n_years} complete years), the estimated change in annual mean "
-            f"{variable_name.lower()} at this location is {stats.slope_per_decade:+.2f} {label} per decade ({ci}). "
-            f"The Mann-Kendall test gives p = {_fmt_p(stats.p_value)}, not below {stats.significance_level}, so "
+            f"{variable_name.lower()} at this location is {stats.slope_per_decade:+.{d}f} {label} per decade ({ci}). "
+            f"The Mann-Kendall test gives {_fmt_p(stats.p_value)}, not below {stats.significance_level}, so "
             f"there is no statistically significant evidence of a trend."
         )
     if stats.autocorrelation_flag:
@@ -167,4 +169,4 @@ def interpret(stats: TrendStats, variable_name: str, unit: str, first_year: int,
 
 
 def _fmt_p(p: float) -> str:
-    return "<0.0001" if p < 1e-4 else f"{p:.4f}"
+    return "p < 0.0001" if p < 1e-4 else f"p = {p:.4f}"

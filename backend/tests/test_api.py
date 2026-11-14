@@ -45,16 +45,18 @@ def test_cors_allows_nextjs_dev_server() -> None:
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
 
 
-def test_variables_lists_t2m_with_units_and_description() -> None:
+def test_variables_lists_supported_variables_with_units_and_description() -> None:
     response = client.get("/api/variables")
     assert response.status_code == 200
     variables = {v["id"]: v for v in response.json()}
-    assert set(variables) == {"T2M"}
+    assert set(variables) == {"T2M", "PRECTOTCORR", "RH2M"}
+    assert all(v["coverage_start_year"] == 1981 for v in variables.values())
     t2m = variables["T2M"]
     assert t2m["unit"] == "C"
     assert t2m["trend_unit"] == "C/decade"
-    assert t2m["coverage_start_year"] == 1981
     assert "2 meters" in t2m["description"]
+    assert (variables["PRECTOTCORR"]["unit"], variables["PRECTOTCORR"]["trend_unit"]) == ("mm/day", "mm/day/decade")
+    assert (variables["RH2M"]["unit"], variables["RH2M"]["trend_unit"]) == ("%", "percentage points/decade")
 
 
 def test_trends_returns_complete_contract(monkeypatch) -> None:
@@ -62,7 +64,7 @@ def test_trends_returns_complete_contract(monkeypatch) -> None:
     response = client.get("/api/trends", params=TRENDS_PARAMS)
     assert response.status_code == 200
     body = response.json()
-    assert body["variable"] == {"id": "T2M", "name": "Air temperature at 2 m", "unit": "C"}
+    assert body["variable"] == {"id": "T2M", "name": "Air temperature at 2 m", "unit": "C", "trend_unit": "C/decade"}
     assert body["data_origin"] == "live"
     assert body["location"]["cell_latitude"] == 45.5
     assert body["counts"]["monthly_valid"] == 36 * 12 - 1
@@ -121,3 +123,23 @@ def test_nasa_outage_serves_labelled_snapshot_only_for_exact_saved_request(monke
     # A different request must not be answered with Ottawa's data
     other = client.get("/api/trends", params={**TRENDS_PARAMS, "latitude": 46.0})
     assert other.status_code == 502
+
+
+def test_trends_precipitation_keeps_precision_and_units(monkeypatch) -> None:
+    # 0.002 mm/day per year = 0.02 mm/day per decade, which must not be rounded away
+    series = _series(1990, 2025, per_year=0.002).model_copy(update={"parameter": "PRECTOTCORR", "unit": "mm/day"})
+    _mock_nasa(monkeypatch, series)
+    body = client.get("/api/trends", params={**TRENDS_PARAMS, "variable": "PRECTOTCORR"}).json()
+    assert body["variable"]["id"] == "PRECTOTCORR"
+    assert body["variable"]["trend_unit"] == "mm/day/decade"
+    assert body["trend"]["slope_per_decade"] == pytest.approx(0.02, abs=1e-4)
+    assert "increased by an estimated 0.020 mm/day per decade" in body["interpretation"]
+
+
+def test_trends_humidity_reports_percentage_points(monkeypatch) -> None:
+    series = _series(1990, 2025, per_year=-0.03).model_copy(update={"parameter": "RH2M", "unit": "%"})
+    _mock_nasa(monkeypatch, series)
+    body = client.get("/api/trends", params={**TRENDS_PARAMS, "variable": "RH2M"}).json()
+    assert body["variable"]["trend_unit"] == "percentage points/decade"
+    assert body["trend"]["slope_per_decade"] == pytest.approx(-0.3, abs=1e-3)
+    assert "decreased by an estimated 0.30 percentage points per decade" in body["interpretation"]

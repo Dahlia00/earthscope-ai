@@ -146,3 +146,8 @@ def test_autocorrelated_residuals_are_flagged() -> None:
     result = analyze_annual_series(_annual(list(10 + noise)))
     assert result.autocorrelation_flag
     assert "autocorrelated" in interpret(result, "Air temperature at 2 m", "C", 1990, 2029, 40)
+
+
+def test_interpretation_formats_very_small_p_values() -> None:
+    text = interpret(analyze_annual_series(_annual([10 + 0.05 * i for i in range(36)])), "Air temperature at 2 m", "C", 1990, 2025, 36)
+    assert "p < 0.0001" in text and "p = <" not in text

@@ -14,4 +14,27 @@ VARIABLES: dict[str, VariableInfo] = {
         coverage_start_year=1981,
         aggregation="Day-weighted annual mean of the 12 monthly values; years with any missing month are excluded.",
     ),
+    "PRECTOTCORR": VariableInfo(
+        id="PRECTOTCORR",
+        name="Precipitation rate (bias-corrected)",
+        unit="mm/day",
+        trend_unit="mm/day/decade",
+        description="The average MERRA-2 bias corrected total precipitation at the surface of the earth.",
+        source="NASA POWER, MERRA-2 reanalysis (monthly)",
+        coverage_start_year=1981,
+        aggregation="Day-weighted annual mean of the 12 monthly mean rates; years with any missing month are excluded.",
+    ),
+    "RH2M": VariableInfo(
+        id="RH2M",
+        name="Relative humidity at 2 m",
+        unit="%",
+        trend_unit="percentage points/decade",
+        description=(
+            "The ratio of vapor pressure to the saturation vapor pressure with respect to a plane surface "
+            "of pure water, expressed in percent."
+        ),
+        source="NASA POWER, derived from MERRA-2 (monthly)",
+        coverage_start_year=1981,
+        aggregation="Day-weighted annual mean of the 12 monthly values; years with any missing month are excluded.",
+    ),
 }
