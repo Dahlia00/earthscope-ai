@@ -41,6 +41,78 @@ class MonthlySeries(BaseModel):
     missing_count: int
 
 
+class AnnualValue(BaseModel):
+    year: int
+    mean: float
+    months_used: int
+
+
+class TrendPoint(BaseModel):
+    year: int
+    value: float
+
+
+class TrendStats(BaseModel):
+    method: str
+    slope_per_decade: float
+    ci_lower_per_decade: float
+    ci_upper_per_decade: float
+    confidence_level: float
+    p_value: float
+    significance_level: float
+    significant: bool
+    mann_kendall_s: int
+    mann_kendall_z: float
+    lag1_autocorrelation: float
+    # True when residual lag-1 autocorrelation is itself significant (|r1| > 1.96/sqrt(n))
+    autocorrelation_flag: bool
+    trend_line: list[TrendPoint]
+
+
+class Location(BaseModel):
+    requested_latitude: float
+    requested_longitude: float
+    grid_latitude: float
+    grid_longitude: float
+    elevation_m: float | None
+
+
+class VariableRef(BaseModel):
+    id: str
+    name: str
+    unit: str
+
+
+class Period(BaseModel):
+    requested_start_year: int
+    requested_end_year: int
+    analyzed_start_year: int
+    analyzed_end_year: int
+
+
+class ObservationCounts(BaseModel):
+    monthly_valid: int
+    monthly_missing: int
+    annual_complete: int
+    incomplete_years_excluded: list[int]
+
+
+class TrendsResponse(BaseModel):
+    location: Location
+    variable: VariableRef
+    source: str
+    # "snapshot" means NASA was unreachable and a saved real NASA response was used
+    data_origin: Literal["live", "snapshot"]
+    retrieved_at: str
+    period: Period
+    counts: ObservationCounts
+    monthly_observations: list[MonthlyObservation]
+    annual_values: list[AnnualValue]
+    trend: TrendStats
+    interpretation: str
+    limitations: list[str]
+
+
 class TileSource(BaseModel):
     """Pre-rendered NASA GIBS tiles the frontend loads directly (display only, no numeric values)."""
 
