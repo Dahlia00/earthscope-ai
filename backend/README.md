@@ -42,6 +42,7 @@ python -m app.services.nasa_power
 | `GET /api/trends` | Point trend analysis (below) |
 | `GET /api/layers` | Registry of globe overlays |
 | `GET /api/layers/{id}/grid` | Prebuilt global trend grid (404 unknown or imagery layer, 503 not built) |
+| `GET /api/detective/hotspots` | Earth Detective Mode: strongest trend regions in a built grid (below) |
 
 ### GET /api/trends
 
@@ -110,6 +111,31 @@ generated from these numbers by fixed templates; nothing is estimated by a langu
 
 Limitations: one MERRA-2 cell (0.5 x 0.625 deg) does not represent a country or region; MERRA-2 is a model-assimilated
 reanalysis, not station data; significance does not prove causation.
+
+## Earth Detective Mode
+
+```
+GET /api/detective/hotspots?layer_id=temperature_trend&direction=both&limit=10
+```
+
+Finds regions with the strongest statistically supported trends in a built grid, so users can start from a lead
+instead of a coordinate. `layer_id` is a `trend_grid` layer; `direction` is `increase`, `decrease` or `both`
+(default); `limit` 1..50 (default 10). 404 for unknown or imagery layers, 503 if the grid is not built.
+
+1. Benjamini-Hochberg FDR (q = 0.05) across all ~208,000 cells. A raw 5% test would flag about 10,000 by chance.
+2. Keep FDR-significant cells in the top 2% by |slope| (ranking by p-value alone is useless: it is ~0 almost everywhere).
+3. Merge adjacent same-sign cells into regions, wrapping across the antimeridian. Regions under 6 cells are dropped.
+4. Rank by cluster mass, |area-weighted mean slope| x area, so large coherent signals beat tiny extreme patches.
+
+Each hotspot has `mean_slope`, `total_change`, `area_km2`, `n_cells`, `peak` cell, `centroid`, `bounds`
+(`crosses_antimeridian` when west > east), a `description`, and a `drilldown` point. Pass `drilldown` to
+`/api/trends` (same variable, the response's `period_start_year` / `period_end_year`) for the full analysis of that location.
+`counts` and `parameters` show how many cells survived each step. Example: `sample_responses/hotspots_temperature_trend.json`.
+For `temperature_trend` the top hotspot is 1,714 cells (about 1.3 million km²) at lat 70-84, lon 10-92, +1.00 C/decade.
+
+Regions have coordinates only; there are no place names. Hotspots are leads, not findings: MERRA-2 trends, especially
+precipitation and humidity, can be affected by changes in assimilated observing systems, and neighbouring cells are not
+independent. The response repeats this in `limitations`.
 
 ## Saved data
 

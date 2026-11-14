@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from app.config import Settings, get_settings
-from app.models.schemas import HealthResponse, LayerInfo, TrendsResponse, VariableInfo
+from app.models.schemas import HealthResponse, HotspotsResponse, LayerInfo, TrendsResponse, VariableInfo
 from app.services import nasa_power
+from app.services.detective import find_hotspots
 from app.services.layers import get_layer, grid_path, list_layers
 from app.services.nasa_power import NasaPowerError
 from app.services.snapshots import load_snapshot
@@ -67,8 +69,7 @@ def layers(settings: Settings = Depends(get_settings)) -> list[LayerInfo]:
     return list_layers(settings.grid_data_dir)
 
 
-@router.get("/layers/{layer_id}/grid")
-def layer_grid(layer_id: str, settings: Settings = Depends(get_settings)) -> Response:
+def _built_grid_layer(layer_id: str, settings: Settings) -> LayerInfo:
     layer = get_layer(layer_id, settings.grid_data_dir)
     if layer is None:
         raise HTTPException(status_code=404, detail=f"Unknown layer: {layer_id}")
@@ -76,5 +77,22 @@ def layer_grid(layer_id: str, settings: Settings = Depends(get_settings)) -> Res
         raise HTTPException(status_code=404, detail=f"Layer {layer_id} has no numeric grid; use its tiles")
     if layer.status != "available":
         raise HTTPException(status_code=503, detail=f"Trend grid for {layer_id} has not been built yet")
+    return layer
+
+
+@router.get("/layers/{layer_id}/grid")
+def layer_grid(layer_id: str, settings: Settings = Depends(get_settings)) -> Response:
+    _built_grid_layer(layer_id, settings)
     # Validated against TrendGrid at build time; served as-is to avoid re-parsing ~400k floats
     return Response(grid_path(settings.grid_data_dir, layer_id).read_bytes(), media_type="application/json")
+
+
+@router.get("/detective/hotspots", response_model=HotspotsResponse)
+def hotspots(
+    layer_id: str = Query(...),
+    direction: Literal["increase", "decrease", "both"] = "both",
+    limit: int = Query(10, ge=1, le=50),
+    settings: Settings = Depends(get_settings),
+) -> HotspotsResponse:
+    layer = _built_grid_layer(layer_id, settings)
+    return find_hotspots(grid_path(settings.grid_data_dir, layer_id), layer, direction, limit)

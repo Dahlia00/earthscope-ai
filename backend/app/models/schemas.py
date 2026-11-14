@@ -162,3 +162,68 @@ class TrendGrid(BaseModel):
     lon: GridAxis
     slope: list[list[float | None]]
     p_value: list[list[float | None]]
+
+
+class LatLon(BaseModel):
+    latitude: float
+    longitude: float
+
+
+class PeakCell(LatLon):
+    slope: float
+    p_value: float
+
+
+class Bounds(BaseModel):
+    south: float
+    north: float
+    west: float
+    east: float
+    crosses_antimeridian: bool
+
+
+class Hotspot(BaseModel):
+    rank: int
+    direction: Literal["increase", "decrease"]
+    n_cells: int
+    area_km2: int
+    mean_slope: float  # area-weighted, in the layer's trend_unit
+    strength: float  # robust z-score: mean_slope / (1.4826 * MAD of all cell slopes)
+    score: int  # ranking score: |mean_slope| * area_km2 (cluster mass)
+    total_change: float  # mean_slope over the whole period, in the layer's unit
+    peak: PeakCell
+    centroid: LatLon
+    bounds: Bounds
+    drilldown: LatLon  # region cell nearest the centroid; pass to /api/trends
+    description: str
+
+
+class HotspotParameters(BaseModel):
+    fdr_q: float
+    magnitude_percentile: float
+    magnitude_threshold: float
+    min_cells: int
+    robust_scale: float
+
+
+class HotspotCounts(BaseModel):
+    valid_cells: int
+    fdr_significant_cells: int
+    candidate_cells: int
+    regions_found: int
+    regions_after_min_size: int
+
+
+class HotspotsResponse(BaseModel):
+    layer_id: str
+    layer_name: str
+    variable: str
+    unit: str
+    trend_unit: str
+    period_start_year: int
+    period_end_year: int
+    method: str
+    parameters: HotspotParameters
+    counts: HotspotCounts
+    hotspots: list[Hotspot]
+    limitations: list[str]
