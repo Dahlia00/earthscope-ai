@@ -28,3 +28,7 @@ Visible attribution and license links appear in the landing page's “Evidence b
 The SVG sparklines, atmosphere shaders, orbital paths, gradients, and geometric backgrounds are implemented in the frontend. Hero signal values are hand-authored fictional illustrations, explicitly labeled on each card; they are not NASA findings and are not used by the API client or analysis dashboard.
 
 Lucide icons are supplied by the existing `lucide-react` dependency under its ISC license. No NASA logo, official seal, or endorsement badge is used. The attached screenshots serve as layout references and are not shipped as product assets.
+
+## Explorer basemap
+
+Explorer requests viewport raster tiles from `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, with visible © OpenStreetMap contributors attribution and a copyright link. This community service requires no API key but is best-effort, without an SLA. Preserve normal browser caching and referrer behavior; do not add bulk downloads, offline tile packages, or speculative prefetching. See the [official tile usage policy](https://operations.osmfoundation.org/policies/tiles/). Geographic imagery provides context; it is not the NASA scientific data source.

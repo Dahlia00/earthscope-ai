@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: earthscope-ai-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    plan: free
+    envVars:
+      # Set in the Render dashboard to the deployed frontend origin(s), comma-separated, no trailing slash
+      - key: EXTRA_CORS_ORIGINS
+        sync: false

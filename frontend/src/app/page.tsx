@@ -76,7 +76,7 @@ export default function Home() {
               <Link className="space-button space-primary" href="/explore">
                 <PlayIcon /> Start Exploring <ArrowRight size={18} />
               </Link>
-              <a className="space-button space-secondary" href="#mystery">
+              <a className="space-button space-secondary" href="/detective">
                 <Search size={19} /> Discover a Mystery
               </a>
             </Reveal>
@@ -192,20 +192,20 @@ export default function Home() {
             </div>
             <div className="mystery-preview-copy">
               <span className="coming-badge">
-                <Sparkles size={12} /> UP NEXT · OPPOSITE TREND DETECTIVE
+                <Sparkles size={12} /> EARTH DETECTIVE · REAL BACKEND LEADS
               </span>
               <h2 id="mystery-title">One planet. Different stories.</h2>
               <p>
-                Could two places tell contrasting environmental stories? A future investigation will
-                let you compare the evidence side by side.
+                Explore statistically detected regions, inspect their data-quality flags, and follow
+                a lead into a detailed point investigation.
               </p>
               <p className="mystery-availability">
-                Automated discovery is not available yet. No verified comparisons are being
-                presented.
+                Detected trends are leads, not proof of causes. Precipitation results carry
+                unresolved data-quality warnings.
               </p>
             </div>
-            <Link className="space-button space-secondary" href="/explore">
-              Explore one location <ArrowRight size={17} />
+            <Link className="space-button space-secondary" href="/detective">
+              Explore detected regions <ArrowRight size={17} />
             </Link>
           </div>
         </Reveal>

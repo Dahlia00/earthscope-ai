@@ -69,3 +69,35 @@ The repeated Phase 2 brief was re-inspected without rebuilding existing UI compo
 This command, its tests, and its implementation decisions were AI-generated. Review the shared-client loader, environment precedence, annual-observation assumptions, and interpretation of a successful check. No backend files or UI components were changed in this milestone. Automated tests and lint pass; the production build also passes. Browser testing was not performed in this CLI-only step; the earlier port restriction and lack of browser tools remain verification limitations. Real NASA integration remains incomplete until a real backend is available and validated.
 
 The priority order remains: obtain actual API definitions and responses; reconcile the contract and validate real Ottawa data; expose confirmed provenance/methodology/limitations; verify browser behavior and CORS; then implement comparable two-location investigations.
+
+## Current status — verified integration with Evan's backend
+
+This section supersedes the earlier “backend unavailable / proposed schema” checkpoints above. On November 14, 2026, backend files became available and the running localhost:8000 service was inspected. The mismatch was structural: variables are a bare array with `name`, and trends return nested Pydantic models containing requested/cell coordinates, variable metadata, requested/analyzed periods, counts, annual/monthly observations, full trend statistics, provenance, warnings, and limitations.
+
+The frontend now validates that actual wire schema before adapting it for existing charts. `Analysis.backend` retains the full response. No backend files were modified. The explorer exposes the three confirmed backend variables, uses coverage metadata, charts supplied annual means and estimate points, distinguishes saved real snapshots from fresh upstream responses and fictional demo mode, and displays all warnings/limitations. Insufficient data is a real FastAPI 422 error, not an empty fabricated success.
+
+The API diagnostic passes health, variables, and Ottawa trends with live NASA origin, 432 valid monthly values, and 36 complete annual values. Tests use captured real responses plus explicitly mutated transport cases. See the rewritten `API-CONTRACT.md` for the verified schema and field mappings.
+
+Data flow: form → Fetch → runtime wire validation → request-selection matching → display adapter → Recharts, trend summary, and Scientific evidence. Backend statistics and observations remain unchanged; the adapter only renames fields, aligns chart points, and inserts null calendar gaps.
+
+Interview explanation: “I reconciled a frontend's proposed contract with a separately developed FastAPI API. I added strict wire validation and a display adapter, preserved scientific provenance and diagnostics, and tested real API/browser success alongside failure cases without modifying the backend.”
+
+Browser verification now confirms demo → live switching, all three advertised variables, an actual Ottawa request with live NASA origin and 36 annual observations, requested/cell coordinates and methodology display, mobile layout, and the real FastAPI insufficient-data 422 for 2024–2025. The previous chart is cleared on that error. Returning to demo shows only the explicitly fictional fixture. The ignored `artifacts/api-browser-results.json` records the HTTP responses; `artifacts/explorer-live-nasa.png` and `artifacts/explorer-live-nasa-mobile.png` show the live result.
+
+The existing CARTO basemap currently serves an API-key notice in its tiles. This is separate from NASA analysis and did not prevent coordinate entry, API requests, or validated charts; no unrelated map-provider migration was made in this integration fix.
+
+Final checks for this integration fix: `npm run check:api` passed all three endpoints with live origin; 57 automated tests passed; lint, explicit `npx tsc --noEmit`, and the production build passed. The real-backend Chrome workflow passed with no application runtime errors. Generated browser profiles are excluded from lint/TypeScript input; application source validation remains enabled.
+
+Changed files: `src/lib/api.ts`, `src/lib/types.ts`, `src/lib/units.ts`; `src/components/explorer/Explorer.tsx`; `src/components/charts/TrendChart.tsx`; `src/components/insights/TrendSummary.tsx` and new `ScientificEvidence.tsx`; `src/data/mock-analysis.ts` (view-model CI field rename only); `scripts/check-api.mjs` and new `scripts/check-explorer-browser.mjs`; `tests/api.test.mjs` and captured fixtures; `API-CONTRACT.md`, `README.md`, this status document; `eslint.config.mjs` and `tsconfig.json` (generated-artifact exclusions). No backend source or configuration was edited.
+
+A repository-level Python `lib/` ignore pattern was also hiding `frontend/src/lib/` from Git. Added a narrow exception in `frontend/.gitignore` so the API client, types, and unit-format helper can be versioned and reviewed with this fix; the root ignore rules remain unchanged.
+
+## Earth Detective milestone
+
+Added the `/detective` route, sharing the existing rotating Three.js Earth and real API client. It loads the verified layer catalog and ranked backend hotspots, plots centroid markers, supports accessible list/marker selection, shows regional evidence and all quality cautions, and opens supported drilldown coordinates in automatic live point analysis. Imagery/planned layers cannot be mistaken for numeric hotspot layers; temperature-range point analysis stays disabled because T2M_RANGE is not advertised by the point API.
+
+The real temperature grid/example and precipitation warning example were inspected read-only. The current API reports four built trend layers and a precipitation layer warning for 23 of 24 regions. That warning applies to every displayed precipitation lead, including individually unflagged ones, and conservative caution context is retained in point links. No causal conclusions, regional p-values, ranking statistics, or fake discoveries are computed by the frontend.
+
+The original 57 tests plus new detective coverage now total 88. Browser verification confirms actual marker coordinates and pointer/list selection, phone layout, real NASA point drilldown using (78, 56.25), T2M, 1981–2025, precipitation cautions, unsupported point-variable gating, controlled HTTP 503/retry recovery, and the original explorer regression workflow. The isolated browser reports no application runtime errors. See EARTH-DETECTIVE.md for implementation/learning notes, API-CONTRACT.md for the verified discovery endpoints, and ignored artifacts/ for screenshots and machine-readable browser reports. Backend files and existing dependencies were preserved.
+
+Final Earth Detective checks: 88 automated tests, lint, explicit TypeScript checking, production build, the original API diagnostic, and the detective/explorer browser workflows all pass. No backend source files were changed. The final detective browser report has no runtime errors. Warning-bearing point links retain their caution context, and invalid drilldown links are rejected instead of loading demo/default observations.

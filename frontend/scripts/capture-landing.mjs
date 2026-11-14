@@ -74,6 +74,24 @@ async function screenshot(name, full = false) {
     Buffer.from(result.data, 'base64'),
   );
 }
+async function navigate(url) {
+  const loaded = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      socket.removeEventListener('message', listener);
+      reject(new Error('Navigation timeout'));
+    }, 30000);
+    function listener(event) {
+      if (JSON.parse(event.data).method === 'Page.loadEventFired') {
+        clearTimeout(timer);
+        socket.removeEventListener('message', listener);
+        resolve();
+      }
+    }
+    socket.addEventListener('message', listener);
+  });
+  await send('Page.navigate', { url });
+  await loaded;
+}
 await mkdir(new URL('../artifacts/', import.meta.url), { recursive: true });
 try {
   await send('Runtime.enable');
@@ -85,7 +103,7 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
-  await send('Page.navigate', { url: 'http://localhost:3000' });
+  await navigate('http://localhost:3000');
   await waitFor(
     `document.querySelector('.earth-canvas canvas') && document.querySelector('button[aria-label="Pause globe animation"]')`,
   );
@@ -99,16 +117,51 @@ try {
     `document.querySelector('button[aria-label="Resume globe animation"]')?.getAttribute('aria-pressed') === 'true'`,
   );
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
-  const canvasBox = await evaluate(`(()=>{const r=document.querySelector('.earth-canvas canvas').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
-  const beforeDrag = await send('Page.captureScreenshot', {format:'png',clip:{x:canvasBox.x-70,y:canvasBox.y-70,width:140,height:140,scale:1}});
-  await send('Input.dispatchMouseEvent', {type:'mousePressed',x:canvasBox.x,y:canvasBox.y,button:'left',clickCount:1});
-  for(let step=1;step<=8;step++) await send('Input.dispatchMouseEvent', {type:'mouseMoved',x:canvasBox.x+step*12,y:canvasBox.y,button:'left',buttons:1});
-  await send('Input.dispatchMouseEvent', {type:'mouseReleased',x:canvasBox.x+96,y:canvasBox.y,button:'left',clickCount:1});
+  const canvasBox = await evaluate(
+    `(()=>{const r=document.querySelector('.earth-canvas canvas').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`,
+  );
+  const beforeDrag = await send('Page.captureScreenshot', {
+    format: 'png',
+    clip: { x: canvasBox.x - 70, y: canvasBox.y - 70, width: 140, height: 140, scale: 1 },
+  });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: canvasBox.x,
+    y: canvasBox.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  for (let step = 1; step <= 8; step++)
+    await send('Input.dispatchMouseEvent', {
+      type: 'mouseMoved',
+      x: canvasBox.x + step * 12,
+      y: canvasBox.y,
+      button: 'left',
+      buttons: 1,
+    });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: canvasBox.x + 96,
+    y: canvasBox.y,
+    button: 'left',
+    clickCount: 1,
+  });
   await evaluate('new Promise(resolve=>setTimeout(resolve,700))');
-  const afterDrag = await send('Page.captureScreenshot', {format:'png',clip:{x:canvasBox.x-70,y:canvasBox.y-70,width:140,height:140,scale:1}});
-  assert.notEqual(beforeDrag.data, afterDrag.data, 'Dragging should change the rendered Earth view.');
-  await evaluate(`document.querySelector('.cinematic-actions a[href="#mystery"]').click()`);
-  await waitFor(`location.hash === '#mystery'`);
+  const afterDrag = await send('Page.captureScreenshot', {
+    format: 'png',
+    clip: { x: canvasBox.x - 70, y: canvasBox.y - 70, width: 140, height: 140, scale: 1 },
+  });
+  assert.notEqual(
+    beforeDrag.data,
+    afterDrag.data,
+    'Dragging should change the rendered Earth view.',
+  );
+  assert.equal(
+    await evaluate(
+      `document.querySelector('.cinematic-actions a[href="/detective"]').getAttribute('href')`,
+    ),
+    '/detective',
+  );
   await evaluate(`window.scrollTo({top:0,behavior:'instant'})`);
   await screenshot('landing-desktop-full', true);
   await send('Emulation.setDeviceMetricsOverride', {
@@ -122,12 +175,26 @@ try {
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
   await screenshot('landing-mobile', true);
   for (const width of [320, 768, 1280]) {
-    await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 701 });
+    await send('Emulation.setDeviceMetricsOverride', {
+      width,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: width < 701,
+    });
     await evaluate('new Promise(resolve => setTimeout(resolve, 400))');
-    assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, `Horizontal overflow at ${width}px`);
+    assert.equal(
+      await evaluate('document.documentElement.scrollWidth <= innerWidth'),
+      true,
+      `Horizontal overflow at ${width}px`,
+    );
     await screenshot(`landing-${width}`);
   }
-  await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await send('Emulation.setDeviceMetricsOverride', {
+    width: 390,
+    height: 844,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
 
   await send('Emulation.setEmulatedMedia', {
     features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
@@ -145,7 +212,7 @@ try {
   const injection = await send('Page.addScriptToEvaluateOnNewDocument', {
     source: `const original = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function(type, ...args) { return type === 'webgl2' ? null : original.call(this, type, ...args); };`,
   });
-  await send('Page.navigate', { url: 'http://localhost:3000' });
+  await navigate('http://localhost:3000');
   await waitFor(
     `document.querySelector('.earth-fallback-label')?.textContent.includes('3D unavailable')`,
   );
@@ -171,11 +238,11 @@ try {
         checked: [
           'desktop',
           'mobile',
-      '320/768/1280px responsive widths',
+          '320/768/1280px responsive widths',
           'no horizontal overflow',
           'pause',
-      'pointer drag changes Earth view',
-          'mystery anchor',
+          'pointer drag changes Earth view',
+          'Earth Detective CTA destination',
           'reduced motion',
           'still view',
           'WebGL unavailable',

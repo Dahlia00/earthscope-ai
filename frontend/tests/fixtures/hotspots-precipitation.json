@@ -1,0 +1,398 @@
+{
+  "layer_id": "precipitation_trend",
+  "layer_name": "Precipitation trend",
+  "variable": "PRECTOTCORR",
+  "unit": "mm/day",
+  "trend_unit": "mm/day/decade",
+  "period_start_year": 1981,
+  "period_end_year": 2025,
+  "method": "Benjamini-Hochberg FDR across all cells; strongest FDR-significant cells grouped into adjacent same-sign regions; regions ranked by cluster mass (|area-weighted mean trend| x area).",
+  "parameters": {
+    "fdr_q": 0.05,
+    "magnitude_percentile": 98.0,
+    "magnitude_threshold": 0.804,
+    "min_cells": 6,
+    "robust_scale": 0.0578,
+    "suspect_relative_change": 0.5
+  },
+  "counts": {
+    "valid_cells": 207936,
+    "fdr_significant_cells": 45527,
+    "candidate_cells": 913,
+    "regions_found": 69,
+    "regions_after_min_size": 24,
+    "suspect_regions": 23
+  },
+  "layer_warning": "23 of 24 strong-trend regions in this layer show implausibly large changes relative to their local mean, which may indicate reanalysis artefacts. Treat all of its hotspots with caution.",
+  "hotspots": [
+    {
+      "rank": 1,
+      "direction": "increase",
+      "n_cells": 23,
+      "area_km2": 88858,
+      "mean_slope": 1.0006,
+      "strength": 17.3,
+      "score": 88908,
+      "total_change": 4.402,
+      "baseline_mean": 8.867,
+      "relative_change": 0.496,
+      "quality_flag": "ok",
+      "warning": null,
+      "peak": {
+        "latitude": 1.0,
+        "longitude": 113.75,
+        "slope": 1.232,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 0.304,
+        "longitude": 113.043
+      },
+      "bounds": {
+        "south": -1.25,
+        "north": 1.75,
+        "west": 110.938,
+        "east": 114.688,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 0.5,
+        "longitude": 113.125
+      },
+      "description": "Increase in precipitation: +1.00 mm/day/decade on average over 23 cells (about 88,858 km\u00b2), +4.40 mm/day over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 2,
+      "direction": "increase",
+      "n_cells": 121,
+      "area_km2": 435013,
+      "mean_slope": 1.7598,
+      "strength": 30.44,
+      "score": 765553,
+      "total_change": 7.743,
+      "baseline_mean": 6.231,
+      "relative_change": 1.243,
+      "quality_flag": "suspect_magnitude",
+      "warning": "The estimated change is +124% of the local period mean, which is implausibly large for this variable and may be a reanalysis artefact. Verify against independent data before drawing conclusions.",
+      "peak": {
+        "latitude": 21.5,
+        "longitude": 91.25,
+        "slope": 3.913,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 21.207,
+        "longitude": 91.951
+      },
+      "bounds": {
+        "south": 14.75,
+        "north": 27.25,
+        "west": 88.438,
+        "east": 97.812,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 21.0,
+        "longitude": 91.875
+      },
+      "description": "Increase in precipitation: +1.76 mm/day/decade on average over 121 cells (about 435,013 km\u00b2), +7.74 mm/day over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 3,
+      "direction": "increase",
+      "n_cells": 138,
+      "area_km2": 520872,
+      "mean_slope": 1.083,
+      "strength": 18.73,
+      "score": 564085,
+      "total_change": 4.765,
+      "baseline_mean": 6.405,
+      "relative_change": 0.744,
+      "quality_flag": "suspect_magnitude",
+      "warning": "The estimated change is +74% of the local period mean, which is implausibly large for this variable and may be a reanalysis artefact. Verify against independent data before drawing conclusions.",
+      "peak": {
+        "latitude": 9.0,
+        "longitude": 125.625,
+        "slope": 1.86,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 11.832,
+        "longitude": 123.224
+      },
+      "bounds": {
+        "south": 5.75,
+        "north": 19.25,
+        "west": 119.688,
+        "east": 127.812,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 12.0,
+        "longitude": 123.125
+      },
+      "description": "Increase in precipitation: +1.08 mm/day/decade on average over 138 cells (about 520,872 km\u00b2), +4.77 mm/day over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 4,
+      "direction": "increase",
+      "n_cells": 126,
+      "area_km2": 473011,
+      "mean_slope": 1.1407,
+      "strength": 19.73,
+      "score": 539552,
+      "total_change": 5.019,
+      "baseline_mean": 4.622,
+      "relative_change": 1.086,
+      "quality_flag": "suspect_magnitude",
+      "warning": "The estimated change is +109% of the local period mean, which is implausibly large for this variable and may be a reanalysis artefact. Verify against independent data before drawing conclusions.",
+      "peak": {
+        "latitude": 10.5,
+        "longitude": -83.125,
+        "slope": 2.325,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 13.434,
+        "longitude": -85.673
+      },
+      "bounds": {
+        "south": 8.75,
+        "north": 17.75,
+        "west": -90.938,
+        "east": -82.188,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 12.5,
+        "longitude": -85.625
+      },
+      "description": "Increase in precipitation: +1.14 mm/day/decade on average over 126 cells (about 473,011 km\u00b2), +5.02 mm/day over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 5,
+      "direction": "increase",
+      "n_cells": 53,
+      "area_km2": 203391,
+      "mean_slope": 1.8609,
+      "strength": 32.18,
+      "score": 378482,
+      "total_change": 8.188,
+      "baseline_mean": 10.259,
+      "relative_change": 0.798,
+      "quality_flag": "suspect_magnitude",
+      "warning": "The estimated change is +80% of the local period mean, which is implausibly large for this variable and may be a reanalysis artefact. Verify against independent data before drawing conclusions.",
+      "peak": {
+        "latitude": 6.0,
+        "longitude": -78.125,
+        "slope": 4.505,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 6.457,
+        "longitude": -78.796
+      },
+      "bounds": {
+        "south": 2.75,
+        "north": 9.75,
+        "west": -82.813,
+        "east": -77.188,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 6.5,
+        "longitude": -78.75
+      },
+      "description": "Increase in precipitation: +1.86 mm/day/decade on average over 53 cells (about 203,391 km\u00b2), +8.19 mm/day over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 6,
+      "direction": "increase",
+      "n_cells": 62,
+      "area_km2": 238092,
+      "mean_slope": 1.3802,
+      "strength": 23.87,
+      "score": 328612,
+      "total_change": 6.073,
+      "baseline_mean": 7.907,
+      "relative_change": 0.768,
+      "quality_flag": "suspect_magnitude",
+      "warning": "The estimated change is +77% of the local period mean, which is implausibly large for this variable and may be a reanalysis artefact. Verify against independent data before drawing conclusions.",
+      "peak": {
+        "latitude": -6.0,
+        "longitude": 140.625,
+        "slope": 2.29,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": -6.215,
+        "longitude": 139.606
+      },
+      "bounds": {
+        "south": -8.75,
+        "north": -3.25,
+        "west": 134.688,
+        "east": 142.812,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": -6.0,
+        "longitude": 139.375
+      },
+      "description": "Increase in precipitation: +1.38 mm/day/decade on average over 62 cells (about 238,092 km\u00b2), +6.07 mm/day over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 7,
+      "direction": "decrease",
+      "n_cells": 73,
+      "area_km2": 281170,
+      "mean_slope": -1.0942,
+      "strength": -18.92,
+      "score": 307656,
+      "total_change": -4.814,
+      "baseline_mean": 6.827,
+      "relative_change": -0.705,
+      "quality_flag": "suspect_magnitude",
+      "warning": "The estimated change is -71% of the local period mean, which is implausibly large for this variable and may be a reanalysis artefact. Verify against independent data before drawing conclusions.",
+      "peak": {
+        "latitude": 5.5,
+        "longitude": -63.125,
+        "slope": -2.059,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 4.382,
+        "longitude": -65.328
+      },
+      "bounds": {
+        "south": 1.75,
+        "north": 7.25,
+        "west": -69.062,
+        "east": -61.562,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 4.5,
+        "longitude": -65.0
+      },
+      "description": "Decrease in precipitation: -1.09 mm/day/decade on average over 73 cells (about 281,170 km\u00b2), -4.81 mm/day over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 8,
+      "direction": "increase",
+      "n_cells": 29,
+      "area_km2": 111828,
+      "mean_slope": 1.1652,
+      "strength": 20.15,
+      "score": 130306,
+      "total_change": 5.127,
+      "baseline_mean": 6.815,
+      "relative_change": 0.752,
+      "quality_flag": "suspect_magnitude",
+      "warning": "The estimated change is +75% of the local period mean, which is implausibly large for this variable and may be a reanalysis artefact. Verify against independent data before drawing conclusions.",
+      "peak": {
+        "latitude": 4.5,
+        "longitude": -71.875,
+        "slope": 1.565,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 3.499,
+        "longitude": -72.414
+      },
+      "bounds": {
+        "south": 1.75,
+        "north": 5.25,
+        "west": -74.062,
+        "east": -70.938,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 3.5,
+        "longitude": -72.5
+      },
+      "description": "Increase in precipitation: +1.17 mm/day/decade on average over 29 cells (about 111,828 km\u00b2), +5.13 mm/day over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 9,
+      "direction": "increase",
+      "n_cells": 31,
+      "area_km2": 115618,
+      "mean_slope": 1.0766,
+      "strength": 18.62,
+      "score": 124472,
+      "total_change": 4.737,
+      "baseline_mean": 4.881,
+      "relative_change": 0.97,
+      "quality_flag": "suspect_magnitude",
+      "warning": "The estimated change is +97% of the local period mean, which is implausibly large for this variable and may be a reanalysis artefact. Verify against independent data before drawing conclusions.",
+      "peak": {
+        "latitude": 15.5,
+        "longitude": 108.75,
+        "slope": 1.585,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 15.053,
+        "longitude": 108.551
+      },
+      "bounds": {
+        "south": 11.25,
+        "north": 17.25,
+        "west": 106.562,
+        "east": 110.312,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 15.0,
+        "longitude": 108.75
+      },
+      "description": "Increase in precipitation: +1.08 mm/day/decade on average over 31 cells (about 115,618 km\u00b2), +4.74 mm/day over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 10,
+      "direction": "decrease",
+      "n_cells": 20,
+      "area_km2": 76503,
+      "mean_slope": -1.055,
+      "strength": -18.25,
+      "score": 80714,
+      "total_change": -4.642,
+      "baseline_mean": 4.381,
+      "relative_change": -1.06,
+      "quality_flag": "suspect_magnitude",
+      "warning": "The estimated change is -106% of the local period mean, which is implausibly large for this variable and may be a reanalysis artefact. Verify against independent data before drawing conclusions.",
+      "peak": {
+        "latitude": 8.0,
+        "longitude": -71.25,
+        "slope": -1.317,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 8.073,
+        "longitude": -70.782
+      },
+      "bounds": {
+        "south": 6.75,
+        "north": 9.75,
+        "west": -72.187,
+        "east": -69.687,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 8.0,
+        "longitude": -70.625
+      },
+      "description": "Decrease in precipitation: -1.06 mm/day/decade on average over 20 cells (about 76,503 km\u00b2), -4.64 mm/day over 1981-2025. Every cell passes FDR significance."
+    }
+  ],
+  "limitations": [
+    "Hotspots are leads to investigate, not findings; significance does not prove causation.",
+    "Based on MERRA-2 reanalysis, whose trends can be affected by changes in the observing systems it assimilates, especially for precipitation and humidity.",
+    "Neighbouring cells are spatially correlated, so FDR control is approximate and regions are not independent tests.",
+    "Ranking favours large regions with strong trends; it does not measure how unusual a trend is relative to natural variability.",
+    "Regions are identified by coordinates only; no place names are assigned.",
+    "Regions flagged suspect_magnitude change by more than half of their local mean over the period; such changes are implausible for real climate and may be reanalysis artefacts. They are ranked after all other regions.",
+    "Temperature (degrees Celsius) is not screened for implausible magnitude because relative change is not defined."
+  ]
+}

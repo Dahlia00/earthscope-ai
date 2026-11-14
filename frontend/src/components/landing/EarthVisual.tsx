@@ -16,7 +16,7 @@ function StaticEarth({ message = 'Earth preview' }: { message?: string }) {
           alt=""
           fill
           sizes="(max-width: 700px) 80vw, 450px"
-          priority
+          preload
         />
       </div>
       <span className="earth-fallback-label">{message}</span>

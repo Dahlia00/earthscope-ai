@@ -1,101 +1,207 @@
-# Proposed API contract — awaiting backend agreement
+# Verified FastAPI contract
 
-This is a frontend integration proposal, **not a confirmed backend schema**. The backend developer must approve or revise this contract before real integration is considered complete. Adapt `src/lib/api.ts` when the agreed schema is known. No backend files are changed by this milestone.
+Verified against Evan's local `backend/app/models/schemas.py`, `backend/app/api/routes.py`, `backend/app/services/variables.py`, and the running service on **November 14, 2026**. This replaces the earlier frontend proposal. Backend code was inspected read-only and was not modified.
 
-Base URL: `NEXT_PUBLIC_API_BASE_URL`, defaults to `http://localhost:8000`.
-The backend must allow the frontend origin (normally `http://localhost:3000`) through CORS.
-All requests use GET. Non-2xx, malformed JSON, invalid response structures, connection failures, and 20-second timeouts show an error; none fall back to demo values.
+Base URL: `NEXT_PUBLIC_API_BASE_URL`, default `http://localhost:8000`. CORS currently permits `http://localhost:3000` (confirmed on actual responses and in backend configuration). Use that frontend origin; `127.0.0.1:3000` is a different origin.
+
+## Confirmed mismatch and resolution
+
+| Earlier frontend assumption                | Actual backend contract                                                       | Frontend handling                                                        |
+| ------------------------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `{ variables: [...] }`                     | Bare `VariableInfo[]`                                                         | Validate the array; reject the old wrapper                               |
+| Variable `label`                           | Variable `name` plus scientific metadata                                      | Map `name` to UI `label`; retain the complete entry as `metadata`        |
+| Variable string and top-level unit         | Nested `variable: { id, name, unit, trend_unit }`                             | Preserve raw units; adapt for existing components                        |
+| `location.latitude/longitude`              | Requested point **and** source cell centre                                    | Match against requested coordinates, display both                        |
+| Top-level start/end years                  | Requested and analyzed periods inside `period`                                | Match the request separately from actual coverage                        |
+| `observations[].value`                     | Monthly observations plus `annual_values[].mean`                              | Chart the backend annual means; retain monthly observations              |
+| `statistics.rate_per_decade` and CI tuple  | `trend.slope_per_decade`, separate CI endpoints and test diagnostics          | Validate, then map to the chart/insight view model without recalculating |
+| No provenance/warnings/limitations         | `data_origin`, `retrieved_at`, warnings, limitations                          | Retain and display all metadata                                          |
+| Null statistics for insufficient data      | HTTP 422 with FastAPI `detail`                                                | Show the backend message and clear results; no fake empty success        |
+| Hardcoded temperature / 1900–2025 controls | T2M, PRECTOTCORR, RH2M; coverage starts 1981; end year up to current UTC year | Populate controls from validated variable metadata                       |
+| 20-second client deadline                  | NASA upstream timeout is 30 seconds                                           | Use a 45-second client deadline with cancellation                        |
 
 ## GET /api/health
 
-Any successful JSON response indicates availability, for example `{ "status": "ok" }`.
+HTTP 200:
+
+```json
+{ "status": "ok", "service": "EarthScope AI Backend" }
+```
+
+The frontend checks both fields and requires `status: "ok"`. Health alone does not establish NASA upstream availability.
 
 ## GET /api/variables
 
+HTTP 200, **bare array**. Actual T2M entry:
+
 ```json
-{ "variables": [{ "id": "T2M", "label": "Air temperature", "unit": "°C" }] }
+[
+  {
+    "id": "T2M",
+    "name": "Air temperature at 2 m",
+    "unit": "C",
+    "trend_unit": "C/decade",
+    "description": "The average air (dry bulb) temperature at 2 meters above the surface of the earth.",
+    "source": "NASA POWER, MERRA-2 reanalysis (monthly)",
+    "coverage_start_year": 1981,
+    "aggregation": "Day-weighted annual mean of the 12 monthly values; years with any missing month are excluded."
+  }
+]
 ```
 
-Only T2M is exposed in this milestone. Live analysis stays disabled until health and variable discovery succeed and temperature is supported.
+The actual array also advertises `PRECTOTCORR` (unit `mm/day`, trend unit `mm/day/decade`) and `RH2M` (unit `%`, trend unit `percentage points/decade`). All three are now selectable in live mode. The complete captured array is in `tests/fixtures/variables.json`; it is test evidence, not a runtime data source.
+
+All fields above are required. IDs must be unique; strings must be nonempty; coverage must be an integer year. Unknown additional fields are retained in the original metadata, rather than causing older clients to drop data. Demo mode remains a separate fixed T2M fixture.
 
 ## GET /api/trends
 
-Query: `latitude=45.4215&longitude=-75.6972&variable=T2M&start_year=1990&end_year=2025`.
+Query:
 
-Proposed response shape below uses **fictional illustrative numbers**, not NASA observations:
+```text
+/api/trends?latitude=45.4215&longitude=-75.6972&variable=T2M&start_year=1990&end_year=2025
+```
 
-```json
-{
-  "location": { "latitude": 45.4215, "longitude": -75.6972 },
-  "variable": "T2M",
-  "unit": "°C",
-  "source": "Fictional contract example",
-  "start_year": 1990,
-  "end_year": 2025,
-  "observations": [{ "year": 1990, "value": 6.1 }, { "year": 1991, "value": null }],
-  "statistics": {
-    "direction": null,
-    "rate_per_decade": null,
-    "p_value": null,
-    "confidence_interval_95": null,
-    "significant": null,
-    "observation_count": 1
-  },
-  "interpretation": "Insufficient observations to estimate a trend."
+Actual successful wire shape (TypeScript declarations mirror the Pydantic models):
+
+```ts
+interface BackendTrendsResponse {
+  location: {
+    requested_latitude: number;
+    requested_longitude: number;
+    cell_latitude: number;
+    cell_longitude: number;
+    elevation_m: number | null;
+  };
+  variable: { id: string; name: string; unit: string; trend_unit: string };
+  source: string;
+  data_origin: 'live' | 'snapshot';
+  retrieved_at: string; // ISO timestamp including timezone
+  period: {
+    requested_start_year: number;
+    requested_end_year: number;
+    analyzed_start_year: number;
+    analyzed_end_year: number;
+  };
+  counts: {
+    monthly_valid: number;
+    monthly_missing: number;
+    annual_complete: number;
+    incomplete_years_excluded: number[];
+  };
+  monthly_observations: { year: number; month: number; value: number }[];
+  annual_values: { year: number; mean: number; months_used: number }[];
+  trend: {
+    method: string;
+    slope_per_decade: number;
+    ci_lower_per_decade: number;
+    ci_upper_per_decade: number;
+    confidence_level: number;
+    p_value: number;
+    significance_level: number;
+    significant: boolean;
+    mann_kendall_s: number;
+    mann_kendall_z: number;
+    lag1_autocorrelation: number;
+    autocorrelation_flag: boolean;
+    trend_line: { year: number; value: number }[];
+  };
+  interpretation: string;
+  warnings: string[];
+  limitations: string[];
 }
 ```
 
-- Return chronological annual observations, with null for missing values. Empty arrays are supported.
-- An optional `trend` number or null on each observation supplies the backend's trend line. The frontend never computes one.
-- `direction`: `increasing`, `decreasing`, `stable`, or null.
-- All unavailable statistical values must be explicit null. Never infer significance from a p-value on the frontend.
-- `confidence_interval_95`: ordered `[lower, upper]` in measurement units **per decade**, or null.
-- `rate_per_decade`: measurement units per decade, or null.
-- `significant`: explicit boolean or null. The backend owns its test and threshold.
-- `observation_count`: integer count of usable observations from the backend.
-- `interpretation`: backend-provided explanation or null.
-- Coordinates, variable, and period must match the request; unmatched results are withheld.
-- Frontend currently allows integer years 1900–2025. Confirm NASA source coverage and limits with the backend developer before production use.
+### Scientific semantics
 
-## Integration checkpoint — November 14, 2026
+- Monthly values are provided by NASA POWER / MERRA-2. The backend forms day-weighted annual means only for years with all 12 valid months.
+- The returned location describes one MERRA-2 grid cell, approximately 0.5 × 0.625 degrees, not a country or city-wide average. Requested coordinates and cell-centre coordinates can differ and must not be substituted for each other.
+- `monthly_missing` counts explicit invalid/fill values seen by the backend parser. Fully absent upstream monthly keys need not be included in this count. Do not assume valid + missing equals the entire requested calendar coverage.
+- `incomplete_years_excluded` lists partially observed years excluded by the backend. Entirely absent years can be absent from that list too. The chart fills calendar gaps with null values, never interpolated annual means.
+- The analyzed period runs from the first to last complete annual value and can be narrower than the requested period. A successful trend requires at least **10 complete years**, as implemented by the backend service.
+- The method is **Theil–Sen slope; two-sided, tie-corrected Mann–Kendall test; Sen confidence interval**. Do not describe this as ordinary least-squares regression.
+- CI endpoints and slope are in `variable.trend_unit`. The current confidence level is 0.95 and test level 0.05; the UI uses returned levels rather than inventing them.
+- `significant` and `autocorrelation_flag` are backend decisions. The frontend does not compute a p-value, significance decision, trend estimate, confidence interval, or autocorrelation diagnostic.
+- Positive/negative slope signs are used only to label direction in the view model. Opposite signs do not establish a significant difference between locations.
+- Raw `C` / `C/decade` is displayed as `°C` / `°C/decade` for typography only. All numeric values and original unit strings remain unchanged. Humidity trends retain **percentage points/decade**, rather than relative percent change.
 
-**Not agreed or verified against a backend.** This checkout contains no backend directory, OpenAPI definition, or backend branch in the locally available branch references. Requests to `http://localhost:8000/openapi.json` and `/api/health` could not connect. No actual response schema was available to compare; backend/frontend compatibility and NASA provenance remain unknown. Do not treat the existing Fetch wiring as a completed NASA integration.
+### Provenance and missing-data handling
 
-The client now enforces these proposed rules before exposing a live response:
+- `data_origin: "live"`: the backend successfully fetched NASA POWER.
+- `data_origin: "snapshot"`: NASA was unreachable and the backend used an exact-match saved **real NASA response**. The original retrieval timestamp is returned. This is not fictional frontend demo data; the UI explicitly labels it as a saved snapshot and warns that it is not a fresh upstream retrieval.
+- The full validated wire response is retained as `Analysis.backend`, including monthly observations, annual values, method/test diagnostics, warnings, and limitations. The existing chart uses a separate adapted view model.
+- Chart values come directly from `annual_values[].mean`; its optional estimate line comes directly from `trend.trend_line`. Neither is generated by the frontend.
+- Every warning is displayed. The autocorrelation flag is surfaced prominently. All limitations and diagnostics are accessible under Scientific evidence.
 
-- Latitude/longitude must be finite and within geographic bounds.
-- Variable, unit, and source must be nonempty strings.
-- Annual observations must have unique, increasing integer years within the returned period. Missing annual values must be explicit nulls; the backend must include missing years so the chart can display gaps.
-- Observation count cannot exceed the number of annual observation records. This assumes annual sampling; confirm this assumption with the backend developer.
-- The returned selection must match the requested coordinates (tolerance 0.0001 degrees), variable, and period. Dataset grid-cell coordinates must be separate metadata, rather than replacing the requested point.
-- Explicit backend significance, unavailable values, and supplied trend estimates are preserved. The frontend does not infer significance or calculate trends.
-- Non-2xx responses, invalid JSON, schema mismatches, transport failures, and 20-second timeouts are distinct errors. Client cancellation is propagated to Fetch.
+### Runtime validation
 
-`GET /api/health` currently proves only HTTP/JSON reachability. An application readiness payload, upstream NASA availability, and any dataset-specific health details still need agreement. The UI only enables temperature after `/api/variables` advertises `T2M`.
+The frontend rejects absent fields, incorrect types, numeric strings, non-finite numbers, out-of-range coordinates/probabilities/correlations, malformed provenance, reversed CI bounds, unordered/duplicate observation dates, invalid months, non-complete annual records, inconsistent observation counts, periods outside the request, and mismatched trend-line years. Source cell coordinates are allowed to differ; requested coordinates must match within 0.0001 degrees. IDs and requested periods must match exactly.
 
-### Backend handoff checklist
+Successful results must satisfy the actual non-null trend contract and service minimum of 10 complete years. The frontend does not relax this to accept the former fictional/demo wire format. Missing/null-valued **chart gaps** belong to the view model, not to the backend's successful annual-value schema.
 
-Please provide the following to finish the integration without guessing:
+### Errors
 
-1. A running backend URL and its `/openapi.json`, or the actual FastAPI response models plus captured health/variables/trends JSON.
-2. One real Ottawa T2M response for 1990–2025; confirm supported years, annual aggregation, units, missing-value handling, and the meaning of observation count.
-3. The exact NASA product/source identifier and geographic grid coverage, with requested point distinguished from source grid-cell coordinates.
-4. Trend method, significance test and threshold, confidence-interval method, and limitations. Confirm all rates and interval endpoints are per decade.
-5. Empty-data and insufficient-data responses, a non-significant response, validation errors, and upstream NASA failure examples.
-6. CORS permission for the local frontend origin, normally `http://localhost:3000`.
+FastAPI errors use `{ "detail": "message" }` or the standard structured validation-detail array. The frontend displays backend detail as React text.
 
-Record actual field differences here when those responses are available, then update the adapter and tests together. Do not approve this proposal on the backend developer's behalf. Verified comparison/discovery endpoints and comparability metadata remain future work.
+- HTTP 422: unsupported variable, coverage/date/coordinate validation, or fewer than 10 complete years.
+- HTTP 502: NASA request failed and no matching saved real response is available.
+- HTTP 200 with snapshot origin: a saved real response was available; provenance is explicit.
+- Network/CORS errors, invalid JSON, validation failures, and 45-second deadlines remain distinct failures. None switches to demo data. Editing inputs/modes cancels and clears earlier results.
 
-### Run the handoff check
+## Verification evidence
 
-From `frontend/`, run:
+Captured actual requests returned health HTTP 200, three variables, and Ottawa trends HTTP 200 with `data_origin: "live"`, source `NASA POWER (MERRA2)`, **432 valid monthly observations and 36 complete annual values**. The returned requested point is `(45.4215, -75.6972)` and cell centre `(45.5, -75.625)`, elevation 123.92 m.
+
+The captured response reported slope `0.501232090725354 C/decade`, p-value `0.0028546055044674874`, CI `[0.2092489069209117, 0.7519701401376456]`, confidence level `0.95`, and `significant: true`. These are recorded backend results for this cell/period, not hardcoded product values. The complete response is in `tests/fixtures/ottawa-trends.json`, with its original retrieval timestamp. Tests mutate copies only to exercise failure/provenance states; the application never imports these captures.
+
+From `frontend/`:
 
 ```sh
 npm run check:api
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
 ```
 
-The command loads development environment files using Next.js's environment loader, including `.env.local`. An existing shell `NEXT_PUBLIC_API_BASE_URL` takes precedence. It uses the same API client and default Ottawa query as the UI, checks health, checks that T2M is advertised, then requests the 1990–2025 trend analysis. It fails with a nonzero exit code at the first failing endpoint. The returned trend unit must also match variable discovery.
+`check:api` uses the same adapter as the browser, loads `.env.local` with Next.js environment precedence, validates health → variables → Ottawa trends, checks variable/trend unit consistency, reports full scientific metadata, and exits nonzero on failure. It has no demo fallback. Browser verification must use `http://localhost:3000` to exercise the configured CORS origin.
 
-A successful check means only that the backend satisfied the **proposed** contract for that request. The report labels source and statistical significance as backend-reported. Empty observations are explicitly warned about; success is not proof of NASA provenance, scientific validity, or browser CORS compatibility. No mock fixture is imported or used as fallback. Test those remaining properties with the backend developer and browser before claiming completed real-data integration.
+## Earth Detective endpoints — verified November 14, 2026
 
-Current local result: `/api/health` is unreachable, so no variables or trends were fetched and no schema compatibility was established.
+Read-only implementation references: `backend/README.md`, `backend/app/models/schemas.py`, `backend/app/api/routes.py`, `backend/app/services/layers.py`, and `backend/app/services/detective.py`. Actual layer and temperature/precipitation hotspot responses are captured in the frontend's test fixtures. Backend grid/sample files were inspected without modification.
+
+### GET /api/layers
+
+Returns a bare `LayerInfo[]`, containing `id`, `name`, `category`, `kind` (`trend_grid` or `imagery`), `status` (`available`, `not_built`, `planned`), description, nullable observation/trend units, source, limitations, and nullable `tiles` metadata. Tile metadata contains URL template, projection, time start/period, and maximum zoom.
+
+Four currently built trend layers are selectable: temperature, temperature range, precipitation, and humidity. Imagery layers do not provide numeric hotspot statistics; planned/not-built layers and imagery-only layers remain visibly disabled in the detective selector. The MVP does not request numeric grids or GIBS tiles.
+
+The inspected temperature grid contains 361 latitude rows starting at -90° in 0.5° steps and 576 longitude columns starting at -180° in 0.625° steps, for 1981–2025. It is an offline precomputed NASA POWER/MERRA-2 trend grid, not live satellite imagery. No grid build timestamp is returned, so the frontend does not invent a freshness date.
+
+### GET /api/detective/hotspots
+
+Parameters: `layer_id`, `direction=both|increase|decrease`, `limit=1..50` (MVP uses 10). HTTP 404 for unknown/imagery layers; 503 for unbuilt grids. Errors use the shared FastAPI detail handling.
+
+The response contains:
+
+- `layer_id`, `layer_name`, `variable`, `unit`, `trend_unit`, period start/end years, and method.
+- `parameters`: FDR q, magnitude percentile and threshold, minimum cells, robust scale, suspect relative-change threshold.
+- `counts`: valid cells, FDR-significant cells, candidate cells, regions found, regions after minimum size, suspect regions. Counts describe the whole detection pass, not just the requested top list.
+- `layer_warning`: null or a layer-wide data-quality warning.
+- `hotspots`: ranked records containing direction, number of cells, area in km², area-weighted mean slope, robust strength, score, total period change, nullable baseline/relative change, quality flag, nullable warning, peak cell with raw p-value/slope, centroid, bounds including antimeridian flag, `drilldown`, and backend description.
+- Full `limitations` array. Exact TypeScript wire declarations are in `src/lib/types.ts`; the original captured JSON is in `tests/fixtures/hotspots-temperature.json` and `hotspots-precipitation.json`.
+
+Validation rejects malformed fields/coordinates, invalid signs, negative areas/counts, duplicate or unordered ranks, invalid bounds/antimeridian combinations, unknown quality flags, missing warnings for suspect-magnitude regions, invalid probability/filter values, excess results, and layer/direction mismatches. Units must agree with the selected catalog layer. Returned metadata is kept intact; no statistics, discovery scores, ranking, or significance are calculated in the frontend.
+
+### Scientific interpretation and drilldown
+
+Markers show the backend **centroid** on the globe, not the peak, drilldown coordinate, actual region boundary, or affected area. Backend rank determines list order. Increasing/decreasing direction is expressed with both arrows/text and cyan/purple; amber borders additionally indicate caution. Focusing a lead pauses rotation and points the camera toward that geographic anchor.
+
+- `quality_flag: ok` means the backend magnitude screen did not flag that region, not a guarantee of scientific reliability.
+- `not_assessed` is explicitly described as not screened, not a quality endorsement.
+- `suspect_magnitude` warnings remain visible. A `layer_warning` applies caution to **every** region in that layer, including individually unflagged ones.
+- The actual precipitation response reports 23 suspect regions out of 24 retained regions and a layer-wide warning. The frontend labels the layer's reliability unresolved, presents its hotspots as diagnostics rather than reliable climate findings, and preserves that caution in drilldown links.
+- Raw peak p-values are for a single peak cell, not a region-wide test or a comparison between regions. A zero value is shown at returned precision, not as certainty. Spatial dependence and reanalysis artefacts remain explicit backend limitations.
+
+The point action is enabled only when `/api/variables` advertises the response's `variable`. `T2M_RANGE` is currently absent there, so temperature-range discovery remains browsable but has no point-analysis link. Failure to verify point variables disables drilldown, without hiding valid regional evidence.
+
+A valid action opens `/explore?latitude=<drilldown.latitude>&longitude=<drilldown.longitude>&variable=<response.variable>&start_year=<period_start_year>&end_year=<period_end_year>&from=detective`. Flagged leads also carry `detective_caution=1` as a conservative contextual caution, not a substitute for fresh point metadata. URL values are validated, then the explorer opens in Live API mode and requests the exact selection automatically. Invalid links are rejected rather than replaced with Ottawa/demo data. Point results retain their own metadata and warnings and are clearly distinguished from regional means.

@@ -1,0 +1,105 @@
+[
+  {
+    "id": "temperature_trend",
+    "name": "Temperature trend",
+    "category": "temperature",
+    "kind": "trend_grid",
+    "status": "available",
+    "description": "Change in annual mean air temperature at 2 m.",
+    "unit": "C",
+    "trend_unit": "C/decade",
+    "source": "NASA POWER, MERRA-2 monthly (Zarr), variable T2M",
+    "limitations": "MERRA-2 is a model-assimilated reanalysis, not direct station observations. Grid cells are ~50 km wide; a cell does not represent a country or region. Annual values are autocorrelated, so p-values may be optimistic. With ~200,000 cells tested at 5%, about 5% would look significant by chance. A significant trend does not establish cause.",
+    "tiles": null
+  },
+  {
+    "id": "temperature_range_trend",
+    "name": "Temperature range trend",
+    "category": "temperature",
+    "kind": "trend_grid",
+    "status": "available",
+    "description": "Change in the gap between minimum and maximum hourly 2 m temperature (daily swing).",
+    "unit": "C",
+    "trend_unit": "C/decade",
+    "source": "NASA POWER, MERRA-2 monthly (Zarr), variable T2M_RANGE",
+    "limitations": "MERRA-2 is a model-assimilated reanalysis, not direct station observations. Grid cells are ~50 km wide; a cell does not represent a country or region. Annual values are autocorrelated, so p-values may be optimistic. With ~200,000 cells tested at 5%, about 5% would look significant by chance. A significant trend does not establish cause.",
+    "tiles": null
+  },
+  {
+    "id": "precipitation_trend",
+    "name": "Precipitation trend",
+    "category": "precipitation",
+    "kind": "trend_grid",
+    "status": "available",
+    "description": "Change in mean MERRA-2 bias-corrected total precipitation.",
+    "unit": "mm/day",
+    "trend_unit": "mm/day/decade",
+    "source": "NASA POWER, MERRA-2 monthly (Zarr), variable PRECTOTCORR",
+    "limitations": "MERRA-2 is a model-assimilated reanalysis, not direct station observations. Grid cells are ~50 km wide; a cell does not represent a country or region. Annual values are autocorrelated, so p-values may be optimistic. With ~200,000 cells tested at 5%, about 5% would look significant by chance. A significant trend does not establish cause.",
+    "tiles": null
+  },
+  {
+    "id": "humidity_trend",
+    "name": "Relative humidity trend",
+    "category": "humidity",
+    "kind": "trend_grid",
+    "status": "available",
+    "description": "Change in mean relative humidity at 2 m.",
+    "unit": "%",
+    "trend_unit": "percentage points/decade",
+    "source": "NASA POWER, MERRA-2 monthly (Zarr), variable RH2M",
+    "limitations": "MERRA-2 is a model-assimilated reanalysis, not direct station observations. Grid cells are ~50 km wide; a cell does not represent a country or region. Annual values are autocorrelated, so p-values may be optimistic. With ~200,000 cells tested at 5%, about 5% would look significant by chance. A significant trend does not establish cause.",
+    "tiles": null
+  },
+  {
+    "id": "vegetation_evi",
+    "name": "Vegetation greenness (EVI)",
+    "category": "vegetation",
+    "kind": "imagery",
+    "status": "available",
+    "description": "Monthly Enhanced Vegetation Index from MODIS Aqua. Compare dates to see greening or browning.",
+    "unit": null,
+    "trend_unit": null,
+    "source": "NASA GIBS, MODIS_Aqua_L3_EVI_Monthly",
+    "limitations": "Rendered imagery only: no trend statistics. Compare dates by eye; seasonality dominates.",
+    "tiles": {
+      "url_template": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Aqua_L3_EVI_Monthly/default/{time}/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png",
+      "projection": "EPSG:3857",
+      "time_start": "2002-07-01",
+      "time_period": "P1M",
+      "max_zoom": 7
+    }
+  },
+  {
+    "id": "ocean_chlorophyll",
+    "name": "Ocean chlorophyll (bloom indicator)",
+    "category": "ecology",
+    "kind": "imagery",
+    "status": "available",
+    "description": "Daily chlorophyll-a concentration from MODIS Aqua, an indicator of phytoplankton blooms.",
+    "unit": null,
+    "trend_unit": null,
+    "source": "NASA GIBS, MODIS_Aqua_L2_Chlorophyll_A",
+    "limitations": "Daily swath data with gaps from cloud and orbit. Rendered imagery only: no trend statistics.",
+    "tiles": {
+      "url_template": "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Aqua_L2_Chlorophyll_A/default/{time}/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png",
+      "projection": "EPSG:3857",
+      "time_start": "2002-07-04",
+      "time_period": "P1D",
+      "max_zoom": 7
+    }
+  },
+  {
+    "id": "forest_loss",
+    "name": "Deforestation",
+    "category": "vegetation",
+    "kind": "imagery",
+    "status": "planned",
+    "description": "Forest loss over time.",
+    "unit": null,
+    "trend_unit": null,
+    "source": "None selected: no deforestation layer found in NASA GIBS",
+    "limitations": "Needs a vetted source, e.g. Hansen/Global Forest Watch tree-cover loss, or a proxy such as MODIS land cover (GIBS MODIS_Combined_L3_IGBP_Land_Cover_Type_Annual, 2001-2024). Not available yet.",
+    "tiles": null
+  }
+]

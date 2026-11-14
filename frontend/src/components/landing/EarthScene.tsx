@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line, OrbitControls, Stars, useTexture } from '@react-three/drei';
 import { AdditiveBlending, BackSide, SRGBColorSpace, Vector3, type Group, type Mesh } from 'three';
@@ -53,8 +53,8 @@ const atmosphereFragment = /* glsl */ `
   }
 `;
 
-function Earth({ animated }: { animated: boolean }) {
-  const surface = useRef<Mesh>(null);
+function Earth({ animated, children }: { animated: boolean; children?: ReactNode }) {
+  const surface = useRef<Group>(null);
   const clouds = useRef<Mesh>(null);
   const [dayMap, nightMap, cloudMap] = useTexture(
     ['/textures/earth-day.jpg', '/textures/earth-night.jpg', '/textures/earth-clouds.jpg'],
@@ -86,14 +86,17 @@ function Earth({ animated }: { animated: boolean }) {
 
   return (
     <group rotation={[0.15, 0, 0.12]}>
-      <mesh ref={surface} rotation={[0, 0.12, 0]}>
-        <sphereGeometry args={[1.15, 80, 64]} />
-        <shaderMaterial
-          vertexShader={vertexShader}
-          fragmentShader={surfaceFragment}
-          uniforms={uniforms}
-        />
-      </mesh>
+      <group ref={surface} rotation={[0, 0.12, 0]}>
+        <mesh>
+          <sphereGeometry args={[1.15, 80, 64]} />
+          <shaderMaterial
+            vertexShader={vertexShader}
+            fragmentShader={surfaceFragment}
+            uniforms={uniforms}
+          />
+        </mesh>
+        {children}
+      </group>
       <mesh ref={clouds} rotation={[0, 0.12, 0]}>
         <sphereGeometry args={[1.165, 64, 48]} />
         <meshPhongMaterial
@@ -182,9 +185,11 @@ function ContextGuard({ onFailure }: { onFailure: () => void }) {
 export default function EarthScene({
   animated,
   onFailure,
+  children,
 }: {
   animated: boolean;
   onFailure: () => void;
+  children?: ReactNode;
 }) {
   return (
     <Canvas
@@ -199,7 +204,7 @@ export default function EarthScene({
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 3, 5]} intensity={2.1} color="#dbefff" />
       <Suspense fallback={null}>
-        <Earth animated={animated} />
+        <Earth animated={animated}>{children}</Earth>
       </Suspense>
       <OrbitalPath animated={animated} tilt={[1.05, 0.2, 0.3]} offset={0.4} />
       <OrbitalPath animated={animated} tilt={[1.15, -0.3, -0.3]} offset={3.2} />
@@ -218,8 +223,8 @@ export default function EarthScene({
         rotateSpeed={0.35}
         enableDamping
         dampingFactor={0.08}
-        minPolarAngle={0.8}
-        maxPolarAngle={2.2}
+        minPolarAngle={children ? 0.08 : 0.8}
+        maxPolarAngle={children ? Math.PI - 0.08 : 2.2}
       />
     </Canvas>
   );

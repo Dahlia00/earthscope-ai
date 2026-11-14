@@ -1,0 +1,8 @@
+-r requirements-prod.txt
+# Offline grid builder and tests only (not needed to run the API)
+pandas>=2.2
+xarray>=2024.6
+zarr>=3.0
+fsspec>=2024.6
+aiohttp>=3.9
+pytest>=8.0

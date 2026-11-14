@@ -1,0 +1,398 @@
+{
+  "layer_id": "temperature_trend",
+  "layer_name": "Temperature trend",
+  "variable": "T2M",
+  "unit": "C",
+  "trend_unit": "C/decade",
+  "period_start_year": 1981,
+  "period_end_year": 2025,
+  "method": "Benjamini-Hochberg FDR across all cells; strongest FDR-significant cells grouped into adjacent same-sign regions; regions ranked by cluster mass (|area-weighted mean trend| x area).",
+  "parameters": {
+    "fdr_q": 0.05,
+    "magnitude_percentile": 98.0,
+    "magnitude_threshold": 0.763,
+    "min_cells": 6,
+    "robust_scale": 0.1764,
+    "suspect_relative_change": 0.5
+  },
+  "counts": {
+    "valid_cells": 207936,
+    "fdr_significant_cells": 149519,
+    "candidate_cells": 3005,
+    "regions_found": 44,
+    "regions_after_min_size": 14,
+    "suspect_regions": 0
+  },
+  "layer_warning": null,
+  "hotspots": [
+    {
+      "rank": 1,
+      "direction": "increase",
+      "n_cells": 1714,
+      "area_km2": 1311026,
+      "mean_slope": 1.0002,
+      "strength": 5.67,
+      "score": 1311282,
+      "total_change": 4.401,
+      "baseline_mean": -7.288,
+      "relative_change": null,
+      "quality_flag": "not_assessed",
+      "warning": null,
+      "peak": {
+        "latitude": 77.5,
+        "longitude": 61.875,
+        "slope": 1.511,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 77.879,
+        "longitude": 56.02
+      },
+      "bounds": {
+        "south": 70.25,
+        "north": 83.75,
+        "west": 10.312,
+        "east": 91.562,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 78.0,
+        "longitude": 56.25
+      },
+      "description": "Increase in temperature: +1.00 \u00b0C/decade on average over 1714 cells (about 1,311,026 km\u00b2), +4.40 \u00b0C over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 2,
+      "direction": "increase",
+      "n_cells": 1015,
+      "area_km2": 597549,
+      "mean_slope": 0.8053,
+      "strength": 4.56,
+      "score": 481206,
+      "total_change": 3.543,
+      "baseline_mean": -12.539,
+      "relative_change": null,
+      "quality_flag": "not_assessed",
+      "warning": null,
+      "peak": {
+        "latitude": 79.5,
+        "longitude": 140.0,
+        "slope": 0.875,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 80.038,
+        "longitude": 137.222
+      },
+      "bounds": {
+        "south": 74.75,
+        "north": 87.25,
+        "west": 111.562,
+        "east": -179.062,
+        "crosses_antimeridian": true
+      },
+      "drilldown": {
+        "latitude": 80.0,
+        "longitude": 137.5
+      },
+      "description": "Increase in temperature: +0.81 \u00b0C/decade on average over 1015 cells (about 597,549 km\u00b2), +3.54 \u00b0C over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 3,
+      "direction": "increase",
+      "n_cells": 87,
+      "area_km2": 104031,
+      "mean_slope": 0.785,
+      "strength": 4.45,
+      "score": 81659,
+      "total_change": 3.454,
+      "baseline_mean": -9.246,
+      "relative_change": null,
+      "quality_flag": "not_assessed",
+      "warning": null,
+      "peak": {
+        "latitude": 72.0,
+        "longitude": -166.25,
+        "slope": 0.822,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 71.947,
+        "longitude": -169.925
+      },
+      "bounds": {
+        "south": 70.25,
+        "north": 73.25,
+        "west": -177.188,
+        "east": -162.188,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 72.0,
+        "longitude": -170.0
+      },
+      "description": "Increase in temperature: +0.78 \u00b0C/decade on average over 87 cells (about 104,031 km\u00b2), +3.45 \u00b0C over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 4,
+      "direction": "increase",
+      "n_cells": 29,
+      "area_km2": 37625,
+      "mean_slope": 0.8151,
+      "strength": 4.62,
+      "score": 30669,
+      "total_change": 3.587,
+      "baseline_mean": -1.348,
+      "relative_change": null,
+      "quality_flag": "not_assessed",
+      "warning": null,
+      "peak": {
+        "latitude": 70.5,
+        "longitude": 51.25,
+        "slope": 0.87,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 70.373,
+        "longitude": 52.71
+      },
+      "bounds": {
+        "south": 69.75,
+        "north": 71.25,
+        "west": 49.062,
+        "east": 57.188,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 70.5,
+        "longitude": 52.5
+      },
+      "description": "Increase in temperature: +0.82 \u00b0C/decade on average over 29 cells (about 37,625 km\u00b2), +3.59 \u00b0C over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 5,
+      "direction": "increase",
+      "n_cells": 31,
+      "area_km2": 16135,
+      "mean_slope": 0.8544,
+      "strength": 4.84,
+      "score": 13786,
+      "total_change": 3.76,
+      "baseline_mean": -18.217,
+      "relative_change": null,
+      "quality_flag": "not_assessed",
+      "warning": null,
+      "peak": {
+        "latitude": 81.5,
+        "longitude": -71.25,
+        "slope": 0.985,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 82.231,
+        "longitude": -71.692
+      },
+      "bounds": {
+        "south": 81.25,
+        "north": 83.25,
+        "west": -76.563,
+        "east": -66.563,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 82.0,
+        "longitude": -71.875
+      },
+      "description": "Increase in temperature: +0.85 \u00b0C/decade on average over 31 cells (about 16,135 km\u00b2), +3.76 \u00b0C over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 6,
+      "direction": "decrease",
+      "n_cells": 8,
+      "area_km2": 11203,
+      "mean_slope": -1.0342,
+      "strength": -5.86,
+      "score": 11587,
+      "total_change": -4.551,
+      "baseline_mean": -10.575,
+      "relative_change": null,
+      "quality_flag": "not_assessed",
+      "warning": null,
+      "peak": {
+        "latitude": -69.0,
+        "longitude": 73.75,
+        "slope": -1.251,
+        "p_value": 0.0001
+      },
+      "centroid": {
+        "latitude": -68.747,
+        "longitude": 73.746
+      },
+      "bounds": {
+        "south": -69.25,
+        "north": -68.25,
+        "west": 72.188,
+        "east": 75.312,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": -68.5,
+        "longitude": 73.75
+      },
+      "description": "Decrease in temperature: -1.03 \u00b0C/decade on average over 8 cells (about 11,203 km\u00b2), -4.55 \u00b0C over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 7,
+      "direction": "decrease",
+      "n_cells": 12,
+      "area_km2": 9871,
+      "mean_slope": -0.8767,
+      "strength": -4.97,
+      "score": 8654,
+      "total_change": -3.857,
+      "baseline_mean": -16.865,
+      "relative_change": null,
+      "quality_flag": "not_assessed",
+      "warning": null,
+      "peak": {
+        "latitude": -78.0,
+        "longitude": -37.5,
+        "slope": -0.985,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": -77.703,
+        "longitude": -38.241
+      },
+      "bounds": {
+        "south": -78.25,
+        "north": -77.25,
+        "west": -40.938,
+        "east": -35.938,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": -77.5,
+        "longitude": -38.125
+      },
+      "description": "Decrease in temperature: -0.88 \u00b0C/decade on average over 12 cells (about 9,871 km\u00b2), -3.86 \u00b0C over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 8,
+      "direction": "increase",
+      "n_cells": 13,
+      "area_km2": 10311,
+      "mean_slope": 0.779,
+      "strength": 4.42,
+      "score": 8033,
+      "total_change": 3.428,
+      "baseline_mean": -3.669,
+      "relative_change": null,
+      "quality_flag": "not_assessed",
+      "warning": null,
+      "peak": {
+        "latitude": 78.0,
+        "longitude": 15.625,
+        "slope": 0.791,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": 78.149,
+        "longitude": 12.845
+      },
+      "bounds": {
+        "south": 77.75,
+        "north": 78.75,
+        "west": 10.312,
+        "east": 15.938,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": 78.0,
+        "longitude": 13.125
+      },
+      "description": "Increase in temperature: +0.78 \u00b0C/decade on average over 13 cells (about 10,311 km\u00b2), +3.43 \u00b0C over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 9,
+      "direction": "decrease",
+      "n_cells": 6,
+      "area_km2": 9337,
+      "mean_slope": -0.8334,
+      "strength": -4.72,
+      "score": 7781,
+      "total_change": -3.667,
+      "baseline_mean": -12.151,
+      "relative_change": null,
+      "quality_flag": "not_assessed",
+      "warning": null,
+      "peak": {
+        "latitude": -66.5,
+        "longitude": 144.375,
+        "slope": -0.919,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": -66.248,
+        "longitude": 144.375
+      },
+      "bounds": {
+        "south": -66.75,
+        "north": -65.75,
+        "west": 143.438,
+        "east": 145.312,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": -66.0,
+        "longitude": 144.375
+      },
+      "description": "Decrease in temperature: -0.83 \u00b0C/decade on average over 6 cells (about 9,337 km\u00b2), -3.67 \u00b0C over 1981-2025. Every cell passes FDR significance."
+    },
+    {
+      "rank": 10,
+      "direction": "decrease",
+      "n_cells": 7,
+      "area_km2": 6641,
+      "mean_slope": -0.8491,
+      "strength": -4.81,
+      "score": 5639,
+      "total_change": -3.736,
+      "baseline_mean": -12.028,
+      "relative_change": null,
+      "quality_flag": "not_assessed",
+      "warning": null,
+      "peak": {
+        "latitude": -76.0,
+        "longitude": -146.25,
+        "slope": -0.978,
+        "p_value": 0.0
+      },
+      "centroid": {
+        "latitude": -75.781,
+        "longitude": -145.88
+      },
+      "bounds": {
+        "south": -76.25,
+        "north": -75.25,
+        "west": -147.812,
+        "east": -144.062,
+        "crosses_antimeridian": false
+      },
+      "drilldown": {
+        "latitude": -76.0,
+        "longitude": -145.625
+      },
+      "description": "Decrease in temperature: -0.85 \u00b0C/decade on average over 7 cells (about 6,641 km\u00b2), -3.74 \u00b0C over 1981-2025. Every cell passes FDR significance."
+    }
+  ],
+  "limitations": [
+    "Hotspots are leads to investigate, not findings; significance does not prove causation.",
+    "Based on MERRA-2 reanalysis, whose trends can be affected by changes in the observing systems it assimilates, especially for precipitation and humidity.",
+    "Neighbouring cells are spatially correlated, so FDR control is approximate and regions are not independent tests.",
+    "Ranking favours large regions with strong trends; it does not measure how unusual a trend is relative to natural variability.",
+    "Regions are identified by coordinates only; no place names are assigned.",
+    "Regions flagged suspect_magnitude change by more than half of their local mean over the period; such changes are implausible for real climate and may be reanalysis artefacts. They are ranked after all other regions.",
+    "Temperature (degrees Celsius) is not screened for implausible magnitude because relative change is not defined."
+  ]
+}

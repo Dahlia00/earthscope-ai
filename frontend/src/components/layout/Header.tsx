@@ -30,7 +30,13 @@ export function Header() {
         >
           Explore
         </Link>
-        <Link href="/#mystery">Discover a Mystery</Link>
+        <Link
+          href="/detective"
+          className={path === '/detective' ? 'active' : ''}
+          aria-current={path === '/detective' ? 'page' : undefined}
+        >
+          Discover a Mystery
+        </Link>
         <Link href="/#about">About</Link>
       </nav>
       <Link className="header-cta" href="/explore">
