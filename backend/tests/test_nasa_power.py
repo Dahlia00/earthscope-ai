@@ -38,7 +38,7 @@ def test_parse_metadata_and_ordering() -> None:
     assert series.unit == "C"
     assert series.long_name == "Temperature at 2 Meters"
     assert series.source == "NASA POWER (MERRA2)"
-    assert (series.grid_latitude, series.grid_longitude) == (45.422, -75.697)
+    assert (series.cell_latitude, series.cell_longitude) == (45.5, -75.625)
     assert series.elevation_m == 123.92
     first, last = series.observations[0], series.observations[-1]
     assert (first.year, first.month, first.value) == (1990, 1, -7.29)
@@ -95,3 +95,12 @@ def test_live_ottawa_t2m() -> None:
     assert len(series.observations) + series.missing_count == 36 * 12
     assert series.observations[0].year == 1990
     assert -40 < min(o.value for o in series.observations) < max(o.value for o in series.observations) < 40
+
+
+def test_merra2_cell_center_matches_zarr_nearest_cells() -> None:
+    from app.services.nasa_power import merra2_cell_center
+
+    # Ottawa's nearest cell in the POWER Zarr store was verified as (45.5, -75.625)
+    assert merra2_cell_center(45.4215, -75.6972) == (45.5, -75.625)
+    assert merra2_cell_center(-90, -180) == (-90.0, -180.0)
+    assert merra2_cell_center(90, 179.9) == (90.0, 179.375)  # live API clamps here instead of wrapping

@@ -34,8 +34,8 @@ class MonthlySeries(BaseModel):
     source: str
     requested_latitude: float
     requested_longitude: float
-    grid_latitude: float
-    grid_longitude: float
+    cell_latitude: float
+    cell_longitude: float
     elevation_m: float | None
     observations: list[MonthlyObservation]
     missing_count: int
@@ -72,8 +72,9 @@ class TrendStats(BaseModel):
 class Location(BaseModel):
     requested_latitude: float
     requested_longitude: float
-    grid_latitude: float
-    grid_longitude: float
+    # Centre of the 0.5 x 0.625 degree MERRA-2 cell the result describes
+    cell_latitude: float
+    cell_longitude: float
     elevation_m: float | None
 
 

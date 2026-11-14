@@ -23,8 +23,12 @@ _REANALYSIS_NOTE = (
 
 _GIBS_EPSG3857 = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best"
 
+# layer id -> POWER variable; used by the grid builder
+TREND_LAYER_VARIABLE: dict[str, str] = {}
+
 
 def _trend_layer(id: str, name: str, category: str, variable: str, unit: str, description: str) -> LayerInfo:
+    TREND_LAYER_VARIABLE[id] = variable
     return LayerInfo(
         id=id,
         name=name,

@@ -17,6 +17,17 @@ from app.models.schemas import MonthlyObservation, MonthlySeries
 _KEY_PATTERN = re.compile(r"^(\d{4})(\d{2})$")
 _DEFAULT_FILL_VALUE = -999.0
 
+# MERRA-2 grid as stored by POWER: lat -90..90 every 0.5, lon -180..179.375 every 0.625
+_LAT_STEP, _LON_STEP = 0.5, 0.625
+
+
+def merra2_cell_center(latitude: float, longitude: float) -> tuple[float, float]:
+    """Centre of the MERRA-2 cell holding the point. The API's own geometry just echoes the request."""
+    lat = round((latitude + 90) / _LAT_STEP) * _LAT_STEP - 90
+    # POWER clamps to the last column (179.375) rather than wrapping past it
+    lon_index = min(round((longitude + 180) / _LON_STEP), round(360 / _LON_STEP) - 1)
+    return lat, lon_index * _LON_STEP - 180
+
 
 class NasaPowerError(Exception):
     """NASA POWER could not be reached or returned something unusable."""
@@ -58,6 +69,7 @@ def parse_monthly_response(
         observations.append(MonthlyObservation(year=year, month=month, value=float(raw)))
 
     observations.sort(key=lambda o: (o.year, o.month))
+    series_lat, series_lon = merra2_cell_center(requested_latitude, requested_longitude)
     return MonthlySeries(
         parameter=parameter,
         long_name=meta.get("longname", parameter),
@@ -65,8 +77,8 @@ def parse_monthly_response(
         source="NASA POWER (" + ", ".join(sources) + ")" if sources else "NASA POWER",
         requested_latitude=requested_latitude,
         requested_longitude=requested_longitude,
-        grid_latitude=coords[1],
-        grid_longitude=coords[0],
+        cell_latitude=series_lat,
+        cell_longitude=series_lon,
         elevation_m=coords[2] if len(coords) > 2 else None,
         observations=observations,
         missing_count=missing,
@@ -126,6 +138,6 @@ if __name__ == "__main__":
     series = fetch_monthly_series(45.4215, -75.6972, "T2M", 1990, 2025)
     obs = series.observations
     print(f"{series.long_name} [{series.unit}] from {series.source}")
-    print(f"Grid cell: {series.grid_latitude}, {series.grid_longitude} ({series.elevation_m} m)")
+    print(f"MERRA-2 cell: {series.cell_latitude}, {series.cell_longitude} ({series.elevation_m} m)")
     print(f"{len(obs)} valid monthly observations, {series.missing_count} missing")
     print(f"First: {obs[0]}\nLast:  {obs[-1]}")

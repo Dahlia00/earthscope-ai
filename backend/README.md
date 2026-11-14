@@ -62,7 +62,8 @@ vectorised trend code from `trend_analysis.py` so the globe and `/api/trends` gi
 - Source: monthly point API, `community=RE`, MERRA-2 meteorology.
 - Response keys are `YYYYMM`. Month `13` is NASA's annual aggregate and is ignored by the parser.
 - `-999.0` (`header.fill_value`) marks missing values and is dropped, never imputed.
-- NASA snaps the request to its grid cell; the parsed series reports both the requested and grid coordinates.
+- The API's returned coordinates only echo the request. The parsed series reports the requested point and the
+  true MERRA-2 cell centre (0.5 x 0.625 deg), computed from the grid definition and verified against the Zarr store.
 - Failures (timeout, HTTP error, malformed payload) raise `NasaPowerError`; there is no fallback data.
 
 ## CORS

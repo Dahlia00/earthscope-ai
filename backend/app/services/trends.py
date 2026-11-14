@@ -26,8 +26,8 @@ def build_trends_response(
         location=Location(
             requested_latitude=series.requested_latitude,
             requested_longitude=series.requested_longitude,
-            grid_latitude=series.grid_latitude,
-            grid_longitude=series.grid_longitude,
+            cell_latitude=series.cell_latitude,
+            cell_longitude=series.cell_longitude,
             elevation_m=series.elevation_m,
         ),
         variable=VariableRef(id=variable.id, name=variable.name, unit=series.unit),

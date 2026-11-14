@@ -20,7 +20,7 @@ def _series(start: int, end: int, per_year: float = 0.05, drop: set[tuple[int, i
     ]
     return MonthlySeries(
         parameter="T2M", long_name="Temperature at 2 Meters", unit="C", source="NASA POWER (MERRA2)",
-        requested_latitude=45.4215, requested_longitude=-75.6972, grid_latitude=45.422, grid_longitude=-75.697,
+        requested_latitude=45.4215, requested_longitude=-75.6972, cell_latitude=45.5, cell_longitude=-75.625,
         elevation_m=123.92, observations=obs, missing_count=len(drop),
     )
 
@@ -64,7 +64,7 @@ def test_trends_returns_complete_contract(monkeypatch) -> None:
     body = response.json()
     assert body["variable"] == {"id": "T2M", "name": "Air temperature at 2 m", "unit": "C"}
     assert body["data_origin"] == "live"
-    assert body["location"]["grid_latitude"] == 45.422
+    assert body["location"]["cell_latitude"] == 45.5
     assert body["counts"]["monthly_valid"] == 36 * 12 - 1
     assert body["counts"]["monthly_missing"] == 1
     assert body["counts"]["incomplete_years_excluded"] == [2000]
