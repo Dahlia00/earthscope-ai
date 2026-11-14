@@ -7,6 +7,7 @@ from app.models.schemas import HealthResponse, LayerInfo, TrendsResponse, Variab
 from app.services import nasa_power
 from app.services.layers import get_layer, grid_path, list_layers
 from app.services.nasa_power import NasaPowerError
+from app.services.snapshots import load_snapshot
 from app.services.trend_analysis import InsufficientDataError
 from app.services.trends import build_trends_response
 from app.services.variables import VARIABLES
@@ -31,6 +32,7 @@ def trends(
     variable: str = Query(...),
     start_year: int = Query(...),
     end_year: int = Query(...),
+    settings: Settings = Depends(get_settings),
 ) -> TrendsResponse:
     info = VARIABLES.get(variable)
     if info is None:
@@ -43,13 +45,19 @@ def trends(
     if start_year > end_year:
         raise HTTPException(422, "start_year must not be after end_year")
 
+    data_origin = "live"
+    retrieved_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     try:
         series = nasa_power.fetch_monthly_series(latitude, longitude, variable, start_year, end_year)
     except NasaPowerError as exc:
-        raise HTTPException(502, f"Could not retrieve data from NASA POWER: {exc}") from exc
-    retrieved_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        # Only an exact-match saved copy of a real NASA response is used, and it is labelled as such
+        saved = load_snapshot(settings.snapshot_dir, latitude, longitude, variable, start_year, end_year)
+        if saved is None:
+            raise HTTPException(502, f"Could not retrieve data from NASA POWER: {exc}") from exc
+        series, retrieved_at = saved
+        data_origin = "snapshot"
     try:
-        return build_trends_response(series, info, start_year, end_year, "live", retrieved_at)
+        return build_trends_response(series, info, start_year, end_year, data_origin, retrieved_at)
     except InsufficientDataError as exc:
         raise HTTPException(422, str(exc)) from exc
 

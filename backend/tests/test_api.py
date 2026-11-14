@@ -103,6 +103,21 @@ def test_trends_with_too_few_years_is_422_not_a_made_up_trend(monkeypatch) -> No
 
 def test_trends_nasa_failure_is_502_without_fallback(monkeypatch) -> None:
     _mock_nasa(monkeypatch, NasaPowerError("NASA POWER request timed out"))
-    response = client.get("/api/trends", params=TRENDS_PARAMS)
+    response = client.get("/api/trends", params={**TRENDS_PARAMS, "latitude": 10.0, "longitude": 20.0})
     assert response.status_code == 502
     assert "timed out" in response.json()["detail"]
+
+
+def test_nasa_outage_serves_labelled_snapshot_only_for_exact_saved_request(monkeypatch) -> None:
+    _mock_nasa(monkeypatch, NasaPowerError("NASA POWER request timed out"))
+    response = client.get("/api/trends", params=TRENDS_PARAMS)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["data_origin"] == "snapshot"
+    assert body["retrieved_at"].startswith("2026-")
+    assert body["counts"]["monthly_valid"] == 432
+    assert body["trend"]["slope_per_decade"] == pytest.approx(0.50, abs=0.01)
+
+    # A different request must not be answered with Ottawa's data
+    other = client.get("/api/trends", params={**TRENDS_PARAMS, "latitude": 46.0})
+    assert other.status_code == 502

@@ -73,14 +73,14 @@ def parse_monthly_response(
     )
 
 
-def fetch_monthly_series(
+def fetch_monthly_payload(
     latitude: float,
     longitude: float,
     parameter: str,
     start_year: int,
     end_year: int,
     client: httpx.Client | None = None,
-) -> MonthlySeries:
+) -> dict:
     settings = get_settings()
     url = f"{settings.nasa_power_base_url}/temporal/monthly/point"
     params = {
@@ -107,6 +107,18 @@ def fetch_monthly_series(
     finally:
         if owns_client:
             client.close()
+    return payload
+
+
+def fetch_monthly_series(
+    latitude: float,
+    longitude: float,
+    parameter: str,
+    start_year: int,
+    end_year: int,
+    client: httpx.Client | None = None,
+) -> MonthlySeries:
+    payload = fetch_monthly_payload(latitude, longitude, parameter, start_year, end_year, client)
     return parse_monthly_response(payload, parameter, latitude, longitude)
 
 
