@@ -9,6 +9,7 @@ Two kinds:
 Layers without a verified NASA source stay "planned"; they are never backed by made-up data.
 """
 
+import gzip
 from pathlib import Path
 
 from app.models.schemas import LayerInfo, TileSource
@@ -125,6 +126,15 @@ _BY_ID = {layer.id: layer for layer in LAYERS}
 
 def grid_path(grid_dir: Path, layer_id: str) -> Path:
     return grid_dir / f"{layer_id}.json"
+
+
+def gzip_path(path: Path) -> Path:
+    return path.with_name(path.name + ".gz")
+
+
+def write_gzip(path: Path) -> None:
+    """Compress once at build time: compressing a 3.7 MB grid per request is far too slow on a small server."""
+    gzip_path(path).write_bytes(gzip.compress(path.read_bytes(), compresslevel=9, mtime=0))
 
 
 def get_layer(layer_id: str, grid_dir: Path) -> LayerInfo | None:

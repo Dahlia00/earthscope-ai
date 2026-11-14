@@ -18,7 +18,7 @@ import xarray as xr
 
 from app.config import get_settings
 from app.models.schemas import GridAxis, TrendGrid
-from app.services.layers import TREND_LAYER_VARIABLE, get_layer, grid_path
+from app.services.layers import TREND_LAYER_VARIABLE, get_layer, grid_path, write_gzip
 from app.services.trend_analysis import MIN_YEARS, SIGNIFICANCE_LEVEL, trend_columns
 
 ZARR_URL = "https://nasa-power.s3.us-west-2.amazonaws.com/merra2/temporal/power_merra2_monthly_temporal_lst.zarr"
@@ -125,6 +125,7 @@ def build_grid(layer_id: str, start_year: int = DEFAULT_START_YEAR, end_year: in
     path = grid_path(settings.grid_data_dir, layer_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(grid.model_dump_json())
+    write_gzip(path)
     return path, int(np.isnan(slope).sum()), slope.size
 
 

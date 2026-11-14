@@ -112,3 +112,54 @@ def test_live_gibs_tile_template_resolves(layer_id: str) -> None:
     response = httpx.get(url, timeout=30)
     assert response.status_code == 200
     assert response.headers["content-type"] == "image/png"
+
+
+def _built_gzipped_grid(grid_dir: Path) -> Path:
+    from app.services.layers import write_gzip
+
+    grid = TrendGrid(
+        layer_id="temperature_trend", variable="T2M", unit="C", trend_unit="C/decade", source="test", method="synthetic",
+        period_start_year=2000, period_end_year=2001, significance_level=0.05,
+        lat={"start": -90.0, "step": 90.0, "count": 3}, lon={"start": -180.0, "step": 180.0, "count": 2},
+        slope=[[0.1, None], [0.2, 0.3], [None, -0.1]], p_value=[[0.01, None], [0.2, 0.04], [None, 0.5]],
+    )
+    path = grid_dir / "temperature_trend.json"
+    path.write_text(grid.model_dump_json())
+    write_gzip(path)
+    return path
+
+
+def test_grid_is_served_pre_compressed_to_gzip_clients(grid_dir: Path) -> None:
+    _built_gzipped_grid(grid_dir)
+    response = client.get("/api/layers/temperature_trend/grid", headers={"Accept-Encoding": "gzip"})
+    assert response.status_code == 200
+    assert response.headers["content-encoding"] == "gzip"
+    assert response.json()["slope"][1] == [0.2, 0.3]
+
+
+def test_grid_is_served_uncompressed_when_client_does_not_accept_gzip(grid_dir: Path) -> None:
+    _built_gzipped_grid(grid_dir)
+    response = client.get("/api/layers/temperature_trend/grid", headers={"Accept-Encoding": "identity"})
+    assert response.status_code == 200
+    assert "content-encoding" not in response.headers
+    assert response.json()["slope"][1] == [0.2, 0.3]
+
+
+def test_grid_has_cache_headers_and_supports_conditional_requests(grid_dir: Path) -> None:
+    _built_gzipped_grid(grid_dir)
+    first = client.get("/api/layers/temperature_trend/grid")
+    assert "max-age=3600" in first.headers["cache-control"]
+    etag = first.headers["etag"]
+    again = client.get("/api/layers/temperature_trend/grid", headers={"If-None-Match": etag})
+    assert again.status_code == 304 and again.content == b""
+
+
+def test_committed_gzip_files_match_their_json() -> None:
+    import gzip
+
+    from app.config import DEFAULT_GRID_DIR
+    from app.services.layers import gzip_path
+
+    for json_file in DEFAULT_GRID_DIR.glob("*.json"):
+        assert gzip_path(json_file).is_file(), f"missing {gzip_path(json_file).name}; run write_gzip"
+        assert gzip.decompress(gzip_path(json_file).read_bytes()) == json_file.read_bytes(), json_file.name

@@ -1,13 +1,13 @@
 from datetime import datetime, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from app.config import Settings, get_settings
 from app.models.schemas import HealthResponse, HotspotsResponse, LayerInfo, TrendsResponse, VariableInfo
 from app.services import nasa_power
 from app.services.detective import find_hotspots
-from app.services.layers import get_layer, grid_path, list_layers
+from app.services.layers import get_layer, grid_path, gzip_path, list_layers
 from app.services.nasa_power import NasaPowerError
 from app.services.snapshots import load_snapshot
 from app.services.trend_analysis import InsufficientDataError
@@ -81,10 +81,24 @@ def _built_grid_layer(layer_id: str, settings: Settings) -> LayerInfo:
 
 
 @router.get("/layers/{layer_id}/grid")
-def layer_grid(layer_id: str, settings: Settings = Depends(get_settings)) -> Response:
+def layer_grid(
+    layer_id: str, request: Request, settings: Settings = Depends(get_settings)
+) -> Response:
     _built_grid_layer(layer_id, settings)
-    # Validated against TrendGrid at build time; served as-is to avoid re-parsing ~400k floats
-    return Response(grid_path(settings.grid_data_dir, layer_id).read_bytes(), media_type="application/json")
+    path = grid_path(settings.grid_data_dir, layer_id)
+    stat = path.stat()
+    etag = f'W/"{stat.st_mtime_ns}-{stat.st_size}"'
+    headers = {"Cache-Control": "public, max-age=3600", "ETag": etag, "Vary": "Accept-Encoding"}
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers=headers)
+
+    # Validated against TrendGrid at build time; served as-is, pre-compressed when the client accepts gzip
+    gz = gzip_path(path)
+    if "gzip" in request.headers.get("accept-encoding", "") and gz.is_file():
+        return Response(
+            gz.read_bytes(), media_type="application/json", headers={**headers, "Content-Encoding": "gzip"}
+        )
+    return Response(path.read_bytes(), media_type="application/json", headers=headers)
 
 
 @router.get("/detective/hotspots", response_model=HotspotsResponse)
